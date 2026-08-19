@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .dockerignore — Garage Guardian
+# Keep Docker build contexts lean — exclude what containers don't need
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules
+npm-debug.log
+.npm
+
+# Frontend build output (copied explicitly in frontend Dockerfile)
+# public/build  ← intentionally NOT ignored so prod Dockerfile can COPY it
+
+# Laravel local/dev artifacts
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*.php
+
+# Dev & CI
+.github
+.editorconfig
+.phpunit.result.cache
+phpunit.xml
+.php-cs-fixer.cache
+.php-cs-fixer.php
+
+# Docker
+docker-compose.override.yml
+docker/grafana
+docker/prometheus
+
+# Source environment (never bake .env into images)
+.env
+.env.*
+!.env.example
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea
+.vscode
+*.code-workspace
+
+# Test & docs
+tests/
+docs/
+*.md
+!README.md
+
+# Misc
+Makefile
+deploy/

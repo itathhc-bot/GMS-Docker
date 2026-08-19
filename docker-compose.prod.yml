@@ -1,0 +1,141 @@
+##############################################################################
+#  docker-compose.prod.yml — PRODUCTION OVERRIDES
+#  Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+#  Changes vs dev:
+#  - Remove exposed ports for DB/Redis (not accessible from outside)
+#  - Remove dev-only services (mailpit, phpmyadmin)
+#  - Stricter resource limits (CPU/memory)
+#  - Production logging
+#  - Mount real TLS certs
+#  - No volume mounts for source code (uses built image only)
+##############################################################################
+
+name: garage-guardian
+
+services:
+
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  frontend:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 64M
+        reservations:
+          memory: 32M
+
+  backend:
+    # In production: no source volume mount (code is baked into the image)
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    deploy:
+      replicas: 2          # Run 2 PHP-FPM replicas for HA
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
+        reservations:
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  horizon:
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  reverb:
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  scheduler:
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+  mariadb:
+    ports: []           # Do NOT expose DB port in production
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  redis:
+    ports: []           # Do NOT expose Redis port in production
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  minio:
+    ports:
+      - "9000:9000"     # Keep S3 API accessible for presigned URLs
+    # Remove console port in production (use internal access only)
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  tesseract:
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # Explicitly disable dev-only services in production
+  mailpit:
+    profiles:
+      - dev-disabled    # Never matches — effectively disabled
+
+  phpmyadmin:
+    profiles:
+      - dev-disabled    # Never matches — effectively disabled

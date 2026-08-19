@@ -1,0 +1,358 @@
+##############################################################################
+#  docker-compose.yml — DEVELOPMENT
+#  Garage Guardian Microservices Stack
+#
+#  Services (each in its own container):
+#    nginx      → Reverse proxy (port 80)
+#    frontend   → React/Vite SPA (NGINX static, port 3000 internal)
+#    backend    → Laravel PHP-FPM API (port 9000 internal)
+#    horizon    → Laravel queue workers (Horizon)
+#    reverb     → WebSocket server (port 8080)
+#    scheduler  → Laravel cron scheduler
+#    mariadb    → MariaDB 10.11 database (port 3306)
+#    redis      → Redis 7 queue/cache/session store (port 6379)
+#    minio      → S3-compatible object storage (port 9000/9001)
+#    tesseract  → Self-hosted OCR microservice (port 5000)
+#    mailpit    → SMTP catch-all for dev email (port 8025)
+#    phpmyadmin → Database admin UI (port 8081)
+##############################################################################
+
+name: garage-guardian
+
+x-backend-base: &backend-base
+  build:
+    context: .
+    dockerfile: docker/backend/Dockerfile
+  env_file: .env
+  volumes:
+    - app-storage:/var/www/html/storage
+    - app-bootstrap:/var/www/html/bootstrap/cache
+  depends_on:
+    mariadb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - garage-net
+  restart: unless-stopped
+
+services:
+
+  # ── NGINX — Main reverse proxy ─────────────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: garage-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/app.conf:ro
+      # TLS certs (bind-mount on server):
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - frontend
+      - reverb
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── FRONTEND — React/Vite SPA served by NGINX ──────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: garage-frontend
+    # Not exposed externally — accessed through the nginx proxy
+    expose:
+      - "80"
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── BACKEND — Laravel PHP-FPM API ─────────────────────────────────────────
+  backend:
+    <<: *backend-base
+    container_name: garage-backend
+    expose:
+      - "9000"
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ── HORIZON — Queue workers ────────────────────────────────────────────────
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/horizon/Dockerfile
+    container_name: garage-horizon
+    env_file: .env
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ── REVERB — WebSocket server ──────────────────────────────────────────────
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/reverb/Dockerfile
+    container_name: garage-reverb
+    env_file: .env
+    expose:
+      - "8080"
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - garage-net
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── SCHEDULER — Laravel cron ───────────────────────────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+    container_name: garage-scheduler
+    env_file: .env
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap:/var/www/html/bootstrap/cache
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - garage-net
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── MARIADB — Primary database ─────────────────────────────────────────────
+  mariadb:
+    build:
+      context: .
+      dockerfile: docker/mariadb/Dockerfile
+    container_name: garage-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_change_me}
+      MYSQL_DATABASE: ${DB_DATABASE:-garage_guardian}
+      MYSQL_USER: ${DB_USERNAME:-garage}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-garage_secret_change_me}
+      TZ: UTC
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./docker/mariadb/my.cnf:/etc/mysql/conf.d/garage.cnf:ro
+      - ./docker/mariadb/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "3306:3306"   # Remove in production
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret_change_me}", "--silent"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── REDIS — Queue / Cache / Session ───────────────────────────────────────
+  redis:
+    build:
+      context: .
+      dockerfile: docker/redis/Dockerfile
+    container_name: garage-redis
+    volumes:
+      - redis-data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"   # Remove in production
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── MINIO — S3-compatible object storage ──────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: garage-minio
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_secret_change_me}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO Console
+    volumes:
+      - minio-data:/data
+      - ./docker/minio/init.sh:/docker-entrypoint.d/init.sh:ro
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  # ── TESSERACT — Self-hosted OCR ────────────────────────────────────────────
+  tesseract:
+    build:
+      context: .
+      dockerfile: docker/tesseract/Dockerfile
+    container_name: garage-tesseract
+    expose:
+      - "5000"
+    networks:
+      - garage-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── MAILPIT — Dev email catcher (dev only) ────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: garage-mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - garage-net
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  # ── PHPMYADMIN — Database UI (dev only) ───────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: garage-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: ${DB_USERNAME:-garage}
+      PMA_PASSWORD: ${DB_PASSWORD:-garage_secret_change_me}
+      UPLOAD_LIMIT: 50M
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - garage-net
+    restart: unless-stopped
+    profiles:
+      - dev
+
+##############################################################################
+# Volumes
+##############################################################################
+volumes:
+  mariadb-data:
+    driver: local
+  redis-data:
+    driver: local
+  minio-data:
+    driver: local
+  app-storage:
+    driver: local
+  app-bootstrap:
+    driver: local
+  certbot-certs:
+    driver: local
+
+##############################################################################
+# Networks
+##############################################################################
+networks:
+  garage-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
