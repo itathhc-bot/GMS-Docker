@@ -1,0 +1,164 @@
+---
+# BACKEND (PHP-FPM)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: garage-guardian
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: registry.example.com/garage-guardian/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9000
+        envFrom:
+        - configMapRef:
+            name: garage-config
+        - secretRef:
+            name: garage-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 9000
+  selector:
+    app: backend
+---
+# FRONTEND (NGINX SPA)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: garage-guardian
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: registry.example.com/garage-guardian/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: frontend
+---
+# HORIZON (Queue Workers)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: horizon
+  namespace: garage-guardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: horizon
+  template:
+    metadata:
+      labels:
+        app: horizon
+    spec:
+      containers:
+      - name: horizon
+        image: registry.example.com/garage-guardian/horizon:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: garage-config
+        - secretRef:
+            name: garage-secrets
+---
+# REVERB (WebSockets)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reverb
+  namespace: garage-guardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reverb
+  template:
+    metadata:
+      labels:
+        app: reverb
+    spec:
+      containers:
+      - name: reverb
+        image: registry.example.com/garage-guardian/reverb:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: garage-config
+        - secretRef:
+            name: garage-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reverb
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: reverb
+---
+# SCHEDULER (Cron)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  namespace: garage-guardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: registry.example.com/garage-guardian/scheduler:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: garage-config
+        - secretRef:
+            name: garage-secrets

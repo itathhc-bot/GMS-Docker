@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: garage-guardian
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: garage-config
+  namespace: garage-guardian
+data:
+  APP_NAME: "Garage Guardian"
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_URL: "https://techaura-projects.com"
+  FRONTEND_URL: "https://techaura-projects.com"
+  SANCTUM_STATEFUL_DOMAINS: "techaura-projects.com"
+  SESSION_DRIVER: "redis"
+  CACHE_STORE: "redis"
+  QUEUE_CONNECTION: "redis"
+  DB_CONNECTION: "mysql"
+  DB_HOST: "mariadb"
+  REDIS_HOST: "redis"
+  FILESYSTEM_DISK: "s3"
+  AWS_ENDPOINT: "http://minio:9000"
+  AWS_URL: "https://techaura-projects.com/storage"
+  AWS_BUCKET: "garage-guardian"
+  OCR_SERVICE_URL: "http://tesseract:5000/ocr"
+  REVERB_HOST: "reverb"
+  REVERB_PORT: "8080"
+  REVERB_SCHEME: "http"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: garage-secrets
+  namespace: garage-guardian
+type: Opaque
+stringData:
+  # Base64 encoding is not required when using stringData
+  APP_KEY: "base64:YOUR_APP_KEY_HERE"
+  DB_DATABASE: "garage_guardian"
+  DB_USERNAME: "garage"
+  DB_PASSWORD: "change_me_db_password"
+  DB_ROOT_PASSWORD: "change_me_root_password"
+  MINIO_ROOT_USER: "minioadmin"
+  MINIO_ROOT_PASSWORD: "change_me_minio_password"
+  REVERB_APP_ID: "garage-guardian-prod"
+  REVERB_APP_KEY: "change_me_reverb_key"
+  REVERB_APP_SECRET: "change_me_reverb_secret"

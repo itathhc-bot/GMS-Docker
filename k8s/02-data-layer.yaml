@@ -1,0 +1,203 @@
+---
+# MARIADB
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  namespace: garage-guardian
+spec:
+  serviceName: "mariadb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        # Replace with your private registry image if needed
+        image: mariadb:10.11
+        ports:
+        - containerPort: 3306
+        envFrom:
+        - secretRef:
+            name: garage-secrets
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: garage-secrets
+              key: DB_ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: garage-secrets
+              key: DB_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: garage-secrets
+              key: DB_USERNAME
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: garage-secrets
+              key: DB_PASSWORD
+        volumeMounts:
+        - name: mariadb-data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mariadb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mariadb
+---
+# REDIS
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: garage-guardian
+spec:
+  serviceName: "redis"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis
+---
+# MINIO
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: garage-guardian
+spec:
+  serviceName: "minio"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        command: ["server", "/data", "--console-address", ":9001"]
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        envFrom:
+        - secretRef:
+            name: garage-secrets
+        volumeMounts:
+        - name: minio-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: minio-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: garage-guardian
+spec:
+  ports:
+  - name: api
+    port: 9000
+  - name: console
+    port: 9001
+  selector:
+    app: minio
+---
+# TESSERACT OCR
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tesseract
+  namespace: garage-guardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tesseract
+  template:
+    metadata:
+      labels:
+        app: tesseract
+    spec:
+      containers:
+      - name: tesseract
+        # Will be built and pushed by CI pipeline
+        image: registry.example.com/garage-guardian/tesseract:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tesseract
+  namespace: garage-guardian
+spec:
+  ports:
+  - port: 5000
+  selector:
+    app: tesseract
