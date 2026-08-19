@@ -59,7 +59,7 @@ spec:
         image: registry.example.com/garage-guardian/frontend:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -68,7 +68,7 @@ metadata:
   namespace: garage-guardian
 spec:
   ports:
-  - port: 80
+  - port: 8080
   selector:
     app: frontend
 ---

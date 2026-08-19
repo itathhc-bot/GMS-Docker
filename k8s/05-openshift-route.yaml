@@ -1,0 +1,64 @@
+# OpenShift Route to replace K8s Ingress
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: garage-guardian-route
+  namespace: garage-guardian
+spec:
+  host: techaura-projects.com
+  to:
+    kind: Service
+    name: frontend
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: garage-guardian-api
+  namespace: garage-guardian
+spec:
+  host: api.techaura-projects.com
+  to:
+    kind: Service
+    name: backend
+  port:
+    targetPort: 9000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: garage-guardian-reverb
+  namespace: garage-guardian
+spec:
+  host: ws.techaura-projects.com
+  to:
+    kind: Service
+    name: reverb
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: garage-guardian-storage
+  namespace: garage-guardian
+spec:
+  host: storage.techaura-projects.com
+  to:
+    kind: Service
+    name: minio
+  port:
+    targetPort: 9000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

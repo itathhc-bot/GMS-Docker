@@ -45,22 +45,22 @@ WORKDIR /var/www/html
 COPY --from=composer-deps /app/vendor /var/www/html/vendor
 
 # Copy application source
-COPY --chown=appuser:appgroup . /var/www/html
+COPY --chown=1000:0 . /var/www/html
 
 # PHP configuration
 COPY docker/backend/php.ini /usr/local/etc/php/conf.d/app.ini
 COPY docker/backend/php-fpm.conf /usr/local/etc/php-fpm.d/zz-app.conf
 
-# Set permissions
-RUN chown -R appuser:appgroup /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions for OpenShift restricted SCC (Group 0)
+RUN chgrp -R 0 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R g=u /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Run optimization (key must be set via env at runtime)
 RUN php artisan config:clear \
     && php artisan route:clear \
     && php artisan view:clear
 
-USER appuser
+USER 1000
 
 EXPOSE 9000
 

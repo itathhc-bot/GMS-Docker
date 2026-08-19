@@ -35,13 +35,15 @@ RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/bash -D app
 WORKDIR /var/www/html
 
 COPY --from=composer-deps /app/vendor /var/www/html/vendor
-COPY --chown=appuser:appgroup . /var/www/html
+# Copy application source
+COPY --chown=1000:0 . /var/www/html
 COPY docker/backend/php.ini /usr/local/etc/php/conf.d/app.ini
 
-RUN chown -R appuser:appgroup /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions for OpenShift (Group 0)
+RUN chgrp -R 0 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R g=u /var/www/html/storage /var/www/html/bootstrap/cache
 
-USER appuser
+USER 1000
 
 EXPOSE 8080
 

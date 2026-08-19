@@ -28,23 +28,29 @@ COPY components.json ./
 RUN npm run build
 
 # ── Stage 2: NGINX static server ──────────────────────────────────────────────
-FROM nginx:1.27-alpine AS frontend
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS frontend
 
 LABEL org.opencontainers.image.title="Garage Guardian — Frontend (NGINX Static)"
 
 # Remove default config
+USER root
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy built assets from build stage
-COPY --from=frontend-build /app/public /usr/share/nginx/html
+COPY --from=frontend-build --chown=101:101 /app/public /usr/share/nginx/html
 
 # Copy NGINX SPA config
 COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
+# OpenShift Group 0 permissions
+RUN chgrp -R 0 /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx \
+    && chmod -R g=u /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx
+USER 101
+
 # Health check
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost/health || exit 1
+    CMD wget -qO- http://localhost:8080/health || exit 1
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

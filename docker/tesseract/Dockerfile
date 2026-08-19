@@ -32,9 +32,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY docker/tesseract/app.py .
 
-RUN chown -R ocruser:ocruser /app
+# OpenShift compatibility: group 0 must have write access
+RUN chgrp -R 0 /app \
+    && chmod -R g=u /app
 
-USER ocruser
+# Run as non-root (OpenShift will override the UID, but requires numeric)
+USER 1000
 
 EXPOSE 5000
 
