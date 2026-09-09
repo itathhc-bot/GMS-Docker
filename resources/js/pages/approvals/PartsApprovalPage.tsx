@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { recordApproval } from "@/lib/approvals";
 import ApprovalHistory from "@/components/approvals/ApprovalHistory";
+import api from "@/api/client";
 
 interface Row {
   id: string;
@@ -59,29 +60,27 @@ export default function PartsApprovalPage({ variant = "parts" }: { variant?: "pa
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("parts_requests")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-      if (cancelled) return;
-      const raw = data as any;
-      if (raw) {
-        const base = deriveBase(raw.request_number);
-        const r: Row = { ...raw, base_request_number: base };
-        setRow(r);
-        const { data: sib } = await supabase
-          .from("parts_requests")
-          .select("*")
-          .or(`request_number.eq.${base},request_number.like.${base}-%`);
-        if (!cancelled) {
-          setSiblings(((sib as any[]) || []).map((s) => ({
-            ...s,
-            base_request_number: deriveBase(s.request_number),
-          })));
+      try {
+        const res = await api.get(`/parts-requests/${id}`);
+        const raw = res.data?.data || res.data;
+        if (cancelled) return;
+        if (raw) {
+          const base = deriveBase(raw.request_number);
+          const r: Row = { ...raw, base_request_number: base };
+          setRow(r);
+          const resSib = await api.get(`/parts-requests?request_number=${base}`);
+          const sib = resSib.data?.data || resSib.data || [];
+          if (!cancelled) {
+            setSiblings(sib.map((s: any) => ({
+              ...s,
+              base_request_number: deriveBase(s.request_number),
+            })));
+          }
+        } else {
+          setRow(null);
         }
-      } else {
-        setRow(null);
+      } catch (e) {
+        if (!cancelled) setRow(null);
       }
       setLoading(false);
     })();
@@ -99,16 +98,16 @@ export default function PartsApprovalPage({ variant = "parts" }: { variant?: "pa
   const approve = async () => {
     if (!row || !user) return;
     setSubmitting(true);
-    const base = row.base_request_number;
-    const { error } = await supabase
-      .from("parts_requests")
-      .update({
-        status: "Approved",
-        approved_by: user.id,
-        supervisor_remarks: note.trim() || null,
-      } as any)
-      .or(`request_number.eq.${base},request_number.like.${base}-%`);
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    let hasError = false;
+    for (const l of lines) {
+      try {
+        await api.post(`/parts-requests/${l.id}/approve`);
+      } catch (e: any) {
+        toast.error(e.response?.data?.message || e.message);
+        hasError = true;
+      }
+    }
+    if (hasError) { setSubmitting(false); return; }
     await recordApproval({
       entityType,
       entityId: row.id,
@@ -127,15 +126,16 @@ export default function PartsApprovalPage({ variant = "parts" }: { variant?: "pa
     if (!row || !user) return;
     if (!note.trim()) { toast.error("Please provide a rejection reason."); return; }
     setSubmitting(true);
-    const base = row.base_request_number;
-    const { error } = await supabase
-      .from("parts_requests")
-      .update({
-        status: "Rejected",
-        rejection_note: note.trim(),
-      } as any)
-      .or(`request_number.eq.${base},request_number.like.${base}-%`);
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    let hasError = false;
+    for (const l of lines) {
+      try {
+        await api.post(`/parts-requests/${l.id}/reject`, { reason: note.trim() });
+      } catch (e: any) {
+        toast.error(e.response?.data?.message || e.message);
+        hasError = true;
+      }
+    }
+    if (hasError) { setSubmitting(false); return; }
     await recordApproval({
       entityType,
       entityId: row.id,
