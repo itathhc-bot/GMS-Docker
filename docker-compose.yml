@@ -75,6 +75,11 @@ services:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
+      args:
+        - VITE_REVERB_APP_KEY=${VITE_REVERB_APP_KEY}
+        - VITE_REVERB_HOST=${VITE_REVERB_HOST}
+        - VITE_REVERB_PORT=${VITE_REVERB_PORT}
+        - VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
     container_name: garage-frontend
     # Not exposed externally — accessed through the nginx proxy
     expose:

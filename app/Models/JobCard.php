@@ -67,6 +67,7 @@ class JobCard extends Model
     public function scopeOverdueSla(Builder $query)
     {
         return $query->where('status', '!=', 'completed')
-                     ->where('sla_deadline', '<', now());
+                     ->whereNotNull('started_at')
+                     ->whereRaw('DATE_ADD(started_at, INTERVAL sla_hours HOUR) < NOW()');
     }
 }

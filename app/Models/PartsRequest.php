@@ -11,16 +11,7 @@ class PartsRequest extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = [
-        'job_card_id',
-        'requested_by',
-        'approved_by',
-        'issued_by',
-        'status',
-        'description',
-        'priority',
-        'notes',
-    ];
+    protected $guarded = ['id'];
 
     public function jobCard()
     {

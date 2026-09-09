@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First get CSRF cookie (Sanctum SPA auth)
       await api.get("/sanctum/csrf-cookie", { baseURL: window.location.origin });
       const res = await api.post<{ data: { token?: string; user: AuthUser } }>("/auth/login", { email, password });
-      const authUser = res.data.data?.user ?? res.data.data as unknown as AuthUser;
+      const authUser = (res.data as any).user ?? (res.data as any).data?.user ?? res.data as unknown as AuthUser;
       setUser(authUser);
       if (authUser.profile) applyLanguage(authUser.profile.preferred_language);
       return { error: null };

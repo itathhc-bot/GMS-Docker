@@ -8,6 +8,19 @@ use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
+    private function formatUser(User $user)
+    {
+        $user->loadMissing('profile');
+        $roles = $user->getRoleNames()->toArray();
+        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+
+        $userData = $user->toArray();
+        $userData['roles'] = $roles;
+        $userData['permissions'] = $permissions;
+
+        return $userData;
+    }
+
     public function login(array $credentials)
     {
         $user = User::where('email', $credentials['email'])->first();
@@ -27,7 +40,7 @@ class AuthService
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
-            'user' => $user->load('profile', 'roles'),
+            'user' => $this->formatUser($user),
             'token' => $token,
         ];
     }
@@ -39,6 +52,6 @@ class AuthService
 
     public function me(User $user)
     {
-        return $user->load('profile', 'roles.permissions');
+        return $this->formatUser($user);
     }
 }

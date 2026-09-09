@@ -15,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import api from '@/api/client';
 import {
   getPartsRequests,
   createPartsRequest,
@@ -425,29 +427,58 @@ export default function PartsRequest() {
     { part_name: "", part_number: "", quantity: 1, unit: "PCS" },
   ]);
   const [editingDraftIds, setEditingDraftIds] = useState<string[]>([]);
+  const [requests, setRequests] = useState<PartRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [jobCards, setJobCards] = useState<any[]>([]);
+  const [mechanics, setMechanics] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("my_requests");
+  const [selectedApproval, setSelectedApproval] = useState<string | null>(null);
+  const [supervisorRemarks, setSupervisorRemarks] = useState("");
+  const [rejectDialog, setRejectDialog] = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [issueDialog, setIssueDialog] = useState<string | null>(null);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const data = await getPartsRequests({});
+      setRequests(data.map((r: any) => {
+        return {
+          id: r.id,
+          request_number: r.request_number,
+          base_request_number: r.request_number.split('-').slice(0, 2).join('-'),
+          job_card_id: r.job_card_id,
+          job_number: (r.job_card as any)?.job_number || "—",
+          vehicle: (r.job_card as any)?.vehicle?.plate_number || "—",
+          vehicle_make: (r.job_card as any)?.vehicle?.make || "—",
+          mechanic: (r.requested_by_user as any)?.name || "—",
+          part_name: r.part_name,
+          part_number: r.part_number,
           quantity: r.quantity,
           urgency: r.urgency,
           status: r.status,
           reason: r.reason,
-          supervisor_remarks: (r as any).supervisor_remarks ?? null,
+          supervisor_remarks: r.supervisor_remarks ?? null,
           created_at: r.created_at,
           rejection_note: r.rejection_note,
           issued_by: r.issued_by,
           signature_data: r.signature_data,
-          bay_number: (r as any).bay_number ?? (r.job_cards as any)?.bay_number ?? null,
-          collected_by_name: (r as any).collected_by_name ?? null,
-          in_stock: stockInfo?.stock ?? 0,
-          unit_price: stockInfo?.price ?? 0,
-          location: stockInfo?.location ?? null,
+          bay_number: r.bay_number ?? (r.job_card as any)?.bay_number ?? null,
+          collected_by_name: r.collected_by_name ?? null,
+          in_stock: 0,
+          unit_price: 0,
+          location: null,
         };
       }));
+    } catch (e) {
+      console.error("Failed to fetch parts requests", e);
     }
     setLoading(false);
   };
 
   const fetchJobCards = async () => {
     try {
-      const { data } = await axios.get('/api/v1/job-cards?status_not_in=Completed,Closed');
+      const { data } = await api.get('/api/v1/job-cards?status_not_in=Completed,Closed');
       setJobCards(data.data || data);
     } catch (e) {
       console.error("Failed to fetch job cards", e);
@@ -456,7 +487,7 @@ export default function PartsRequest() {
 
   const fetchMechanics = async () => {
     try {
-      const { data } = await axios.get('/api/v1/users?role=mechanic');
+      const { data } = await api.get('/api/v1/users?role=mechanic');
       setMechanics(data.data || data);
     } catch (e) {
       console.error("Failed to fetch mechanics", e);
