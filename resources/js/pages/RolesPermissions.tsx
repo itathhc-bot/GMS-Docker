@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import api from "@/api/client";
 import { getRoles, createRole, updateRole, deleteRole as deleteRoleApi, syncPermissions } from "@/api/roles";
 
 interface PermissionRow {
@@ -85,7 +86,7 @@ export default function RolesPermissions() {
 
       // Also fetch the canonical permissions list
       try {
-        const { data: permsData } = await import('@/api/client').then(m => m.default.get('/permissions'));
+        const { data: permsData } = await api.get('/permissions');
         const canonical: PermissionRow[] = Array.isArray(permsData?.data) ? permsData.data : permsData ?? [];
         if (canonical.length > 0) {
           setPermissions(canonical);
