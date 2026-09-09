@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import api from "@/api/client";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -62,12 +63,8 @@ export default function JobCards() {
 
   const fetchJobs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("job_cards")
-      .select("*, vehicles(plate_number, make, model, year)")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(t("jobCards.form.loadFailed"));
-    else setJobs((data as any) || []);
+    const { data } = await api.get('/job-cards?per_page=500&include=vehicles');
+    setJobs(data?.data || data || []);
     setLoading(false);
   };
 
@@ -90,12 +87,12 @@ export default function JobCards() {
 
     // Verify the plate exists before opening the wizard
     (async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, plate_number")
-        .ilike("plate_number", plate)
-        .maybeSingle();
-      if (error) {
+      let data = null;
+      try {
+        const res = await api.get(`/vehicles?search=${encodeURIComponent(plate)}`);
+        const items = res.data?.data || res.data || [];
+        if (items.length > 0) data = items[0];
+      } catch (e) {
         toast.error(t("jobCards.form.loadFailed"));
         return;
       }

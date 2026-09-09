@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import api from "@/api/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -74,11 +75,8 @@ export default function Inventory() {
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
 
   async function loadItems() {
-    const { data } = await supabase
-      .from("inventory_items")
-      .select("*")
-      .order("status", { ascending: true });
-    setItems((data as any) ?? []);
+    const { data } = await api.get('/inventory?per_page=500');
+    setItems((data.data || data) ?? []);
     setLoading(false);
   }
 
@@ -149,23 +147,20 @@ export default function Inventory() {
     };
 
     if (editing) {
-      const { error } = await supabase
-        .from("inventory_items")
-        .update(payload)
-        .eq("id", editing.id);
+      let error = null;
+      try { await api.patch(`/inventory/${editing.id}`, payload); } catch (e: any) { error = e.response?.data?.message || e.message; }
       if (error) {
-        toast({ title: "Error", description: getFriendlyErrorMessage(error, "update this part"), variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: t("inventory.actions.updated") });
         setDialogOpen(false);
         loadItems();
       }
     } else {
-      const { error } = await supabase
-        .from("inventory_items")
-        .insert(payload);
+      let error = null;
+      try { await api.post(`/inventory`, payload); } catch (e: any) { error = e.response?.data?.message || e.message; }
       if (error) {
-        toast({ title: "Error", description: getFriendlyErrorMessage(error, "add this part"), variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: t("inventory.actions.added") });
         setDialogOpen(false);
@@ -177,12 +172,10 @@ export default function Inventory() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    const { error } = await supabase
-      .from("inventory_items")
-      .delete()
-      .eq("id", deleteTarget.id);
+    let error = null;
+    try { await api.delete(`/inventory/${deleteTarget.id}`); } catch (e: any) { error = e.response?.data?.message || e.message; }
     if (error) {
-      toast({ title: "Error", description: getFriendlyErrorMessage(error, "delete this part"), variant: "destructive" });
+      toast({ title: "Error", description: error, variant: "destructive" });
     } else {
       toast({ title: t("inventory.actions.deleted") });
       loadItems();
