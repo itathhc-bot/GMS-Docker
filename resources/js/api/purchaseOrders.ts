@@ -47,7 +47,7 @@ export const approveFinance = async (id: string, notes?: string): Promise<Purcha
     return data;
 };
 
-export const reject = async (id: string, reason: string): Promise<PurchaseOrder> => {
-    const { data } = await api.post(`/purchase-orders/${id}/reject`, { reason });
+export const rejectPO = async (id: string, payload: { reason: string }): Promise<PurchaseOrder> => {
+    const { data } = await api.post(`/purchase-orders/${id}/reject`, payload);
     return data;
 };
