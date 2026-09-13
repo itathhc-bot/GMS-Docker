@@ -45,7 +45,19 @@ api.interceptors.request.use(async (config) => {
 
 // Response interceptor
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Automatically unwrap Laravel Resource Collections and single resources
+        if (response.data && typeof response.data === 'object') {
+            if (Array.isArray(response.data.data)) {
+                // It's a collection (paginated or unpaginated resource collection)
+                response.data = response.data.data;
+            } else if ('data' in response.data && Object.keys(response.data).length <= 2) {
+                // It's a single resource wrapped in { data: ... }
+                response.data = response.data.data;
+            }
+        }
+        return response;
+    },
     async (error) => {
         if (error.response) {
             const status = error.response.status;
