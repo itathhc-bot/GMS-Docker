@@ -101,7 +101,6 @@ services:
   # ── BACKEND — Laravel PHP-FPM API ─────────────────────────────────────────
   backend:
     <<: *backend-base
-    container_name: garage-backend
     expose:
       - "9000"
     healthcheck:
