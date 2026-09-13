@@ -112,7 +112,7 @@ services:
 
   minio:
     ports:
-      - "9000:9000"     # Keep S3 API accessible for presigned URLs
+      - "9005:9000"     # Keep S3 API accessible for presigned URLs
     # Remove console port in production (use internal access only)
     deploy:
       resources:
