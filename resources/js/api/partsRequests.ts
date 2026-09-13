@@ -48,3 +48,7 @@ export const issue = async (id: string, issueData: any): Promise<PartsRequest> =
     const { data } = await api.post(`/parts-requests/${id}/issue`, issueData);
     return data;
 };
+
+export const deletePartsRequest = async (id: string): Promise<void> => {
+    await api.delete(`/parts-requests/${id}`);
+};
