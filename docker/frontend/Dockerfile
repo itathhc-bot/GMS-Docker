@@ -12,8 +12,8 @@ LABEL org.opencontainers.image.title="Garage Guardian — Frontend Builder"
 WORKDIR /app
 
 # Install deps first (cached layer)
-COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline
+COPY package.json ./
+RUN npm install
 
 # Copy source files needed for build
 COPY resources/ ./resources/
