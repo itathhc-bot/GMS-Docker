@@ -43,3 +43,8 @@ export const me = async (): Promise<User> => {
     const { data } = await api.get<User>('/auth/me');
     return data;
 };
+
+export const resetPassword = async (password: string): Promise<void> => {
+    await fetchCsrfCookie();
+    await api.post('/auth/reset-password', { password });
+};
