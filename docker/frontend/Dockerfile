@@ -19,7 +19,7 @@ RUN npm install
 COPY resources/ ./resources/
 COPY vite.config.ts ./
 COPY tsconfig.json tsconfig.node.json ./
-COPY tailwind.config.js postcss.config.js ./
+COPY tailwind.config.ts postcss.config.js ./
 COPY public/ ./public/
 
 ARG VITE_REVERB_APP_KEY
