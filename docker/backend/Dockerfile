@@ -16,6 +16,18 @@ RUN composer install \
     --ignore-platform-reqs \
     --no-interaction
 
+# ── Stage 2: Frontend assets (Vite build for manifest.json) ───────────────────
+FROM node:20-alpine AS frontend-build
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --prefer-offline 2>/dev/null || npm install
+COPY resources/ ./resources/
+COPY vite.config.ts ./
+COPY tsconfig.json tsconfig.node.json ./
+COPY tailwind.config.ts postcss.config.js ./
+COPY public/ ./public/
+RUN npm run build
+
 # ── Stage 2: Final image ──────────────────────────────────────────────────────
 FROM php:8.3-fpm-alpine AS backend
 
@@ -47,6 +59,10 @@ COPY --from=composer-deps /app/vendor /var/www/html/vendor
 
 # Copy application source
 COPY --chown=1000:0 . /var/www/html
+
+# Copy Vite build output (manifest + assets) from frontend build stage
+# This is needed because public/build/ is .gitignored but @vite() requires manifest.json
+COPY --from=frontend-build --chown=1000:0 /app/public/build /var/www/html/public/build
 
 # PHP configuration
 COPY docker/backend/php.ini /usr/local/etc/php/conf.d/app.ini
