@@ -24,10 +24,13 @@
                 userId: {{ auth()->id() ? '"' . auth()->id() . '"' : 'null' }},
                 appEnv: "{{ config('app.env') }}",
                 echo: {
+                    broadcaster: "reverb",
                     key: "{{ config('reverb.apps.apps.0.key', env('VITE_REVERB_APP_KEY', '')) }}",
-                    host: "{{ env('VITE_REVERB_HOST', 'localhost') }}",
-                    port: {{ env('VITE_REVERB_PORT', 8080) }},
-                    scheme: "{{ env('VITE_REVERB_SCHEME', 'http') }}"
+                    wsHost: "{{ env('VITE_REVERB_HOST', 'localhost') }}",
+                    wsPort: {{ env('VITE_REVERB_PORT', 8080) }},
+                    wssPort: {{ env('VITE_REVERB_PORT', 8080) }},
+                    forceTLS: "{{ env('VITE_REVERB_SCHEME', 'http') }}" === "https",
+                    enabledTransports: ["ws", "wss"]
                 }
             };
         </script>
