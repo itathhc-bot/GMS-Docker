@@ -26,7 +26,7 @@
                 echo: {
                     broadcaster: "reverb",
                     key: "{{ config('reverb.apps.apps.0.key', env('VITE_REVERB_APP_KEY', '')) }}",
-                    wsHost: "{{ env('VITE_REVERB_HOST', 'localhost') }}",
+                    wsHost: window.location.hostname,
                     wsPort: {{ env('VITE_REVERB_PORT', 8080) }},
                     wssPort: {{ env('VITE_REVERB_PORT', 8080) }},
                     forceTLS: "{{ env('VITE_REVERB_SCHEME', 'http') }}" === "https",
