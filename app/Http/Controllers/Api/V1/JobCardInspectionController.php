@@ -22,6 +22,19 @@ class JobCardInspectionController extends Controller
     {
         $this->authorize('update', $jobCard);
 
+        if ($request->has('inspections') && is_array($request->input('inspections'))) {
+            $created = [];
+            foreach ($request->input('inspections') as $item) {
+                $created[] = $jobCard->inspections()->create([
+                    'category' => $item['category'] ?? 'General',
+                    'item_name' => $item['item_name'] ?? 'Unknown',
+                    'status' => $item['status'] ?? 'na',
+                    'notes' => $item['notes'] ?? null,
+                ]);
+            }
+            return response()->json($created, 201);
+        }
+
         $data = $request->validate([
             'category' => 'required|string|max:255',
             'item_name' => 'required|string|max:255',

@@ -11,7 +11,10 @@ class JobCardService
     public function createJobCard(array $data, string $actorId)
     {
         $data['job_number'] = $this->generateJobNumber();
-        $data['status'] = 'pending';
+        $data['status'] = 'Open';
+        if (isset($data['priority'])) {
+            $data['priority'] = strtoupper($data['priority']);
+        }
         
         $jobCard = JobCard::create($data);
         $this->logAudit($actorId, 'create', 'JobCard', $jobCard->id, ['job_number' => $data['job_number']]);
