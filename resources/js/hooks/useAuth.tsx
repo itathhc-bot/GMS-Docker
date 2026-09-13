@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from "react";
 
 import api from "@/api/client";
 import i18n, { LANG_STORAGE_KEY, SUPPORTED_LANGUAGES } from "@/i18n";
@@ -134,21 +134,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const profile = user?.profile ?? null;
   const roles: AppRole[] = user?.roles ?? [];
 
-  const updatePartsExportColumns = async (cols: Record<string, boolean>) => {
+  const updatePartsExportColumns = useCallback(async (cols: Record<string, boolean>) => {
     if (!user) return;
     try {
       await api.patch("/profile", { parts_export_columns: cols });
       setUser((u) => u ? { ...u, profile: u.profile ? { ...u.profile, parts_export_columns: cols } : null } : u);
     } catch { /* best-effort */ }
-  };
+  }, [user]);
 
-  const updatePartsHistoryLocationFilter = async (value: string | null) => {
+  const updatePartsHistoryLocationFilter = useCallback(async (value: string | null) => {
     if (!user) return;
     try {
       await api.patch("/profile", { parts_history_location_filter: value });
       setUser((u) => u ? { ...u, profile: u.profile ? { ...u.profile, parts_history_location_filter: value } : null } : u);
     } catch { /* best-effort */ }
-  };
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, profile, roles, hasRole, hasPermission, loading, signIn, signOut, updatePartsExportColumns, updatePartsHistoryLocationFilter, refreshUser }}>

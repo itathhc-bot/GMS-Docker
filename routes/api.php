@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\MetricsController;
 use App\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\PartsRequestController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\QcReviewController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -75,6 +76,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/me', [AuthController::class, 'me'])
                 ->name('api.v1.auth.me');
         });
+
+        // Profile
+        Route::patch('/profile', [ProfileController::class, 'update'])
+            ->name('api.v1.profile.update');
 
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])
