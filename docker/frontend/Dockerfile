@@ -18,11 +18,9 @@ RUN npm ci --prefer-offline
 # Copy source files needed for build
 COPY resources/ ./resources/
 COPY vite.config.ts ./
-COPY tsconfig.json tsconfig.app.json tsconfig.node.json ./
-COPY tailwind.config.ts postcss.config.js ./
+COPY tsconfig.json tsconfig.node.json ./
+COPY tailwind.config.js postcss.config.js ./
 COPY public/ ./public/
-COPY index.html ./
-COPY components.json ./
 
 ARG VITE_REVERB_APP_KEY
 ARG VITE_REVERB_HOST
