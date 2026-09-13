@@ -20,12 +20,23 @@ RUN composer install \
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline 2>/dev/null || npm install
+RUN npm ci
 COPY resources/ ./resources/
 COPY vite.config.ts ./
 COPY tsconfig.json tsconfig.node.json ./
 COPY tailwind.config.ts postcss.config.js ./
 COPY public/ ./public/
+
+ARG VITE_REVERB_APP_KEY
+ARG VITE_REVERB_HOST
+ARG VITE_REVERB_PORT
+ARG VITE_REVERB_SCHEME
+
+ENV VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY
+ENV VITE_REVERB_HOST=$VITE_REVERB_HOST
+ENV VITE_REVERB_PORT=$VITE_REVERB_PORT
+ENV VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
+
 RUN npm run build
 
 # ── Stage 2: Final image ──────────────────────────────────────────────────────
