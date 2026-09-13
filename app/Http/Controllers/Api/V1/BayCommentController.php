@@ -17,7 +17,7 @@ class BayCommentController extends Controller
         
         $request->validate(['bay_number' => 'nullable|string']);
 
-        $query = BayComment::with('user');
+        $query = BayComment::with('author');
         if ($request->has('bay_number')) {
             $query->where('bay_number', $request->bay_number);
         }
@@ -31,10 +31,10 @@ class BayCommentController extends Controller
 
         try {
             $data = $request->validated();
-            $data['user_id'] = $request->user()->id;
+            $data['author_id'] = $request->user()->id;
             
             $comment = BayComment::create($data);
-            $comment->load('user');
+            $comment->load('author');
 
             broadcast(new BayCommentPosted($comment, $comment->bay_number))->toOthers();
 

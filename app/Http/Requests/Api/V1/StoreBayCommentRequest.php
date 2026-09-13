@@ -13,6 +13,10 @@ class StoreBayCommentRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['comment' => 'required|string', 'bay_number' => 'required|string'];
+        return [
+            'comment' => 'required|string',
+            'bay_number' => 'required|string',
+            'job_card_id' => 'nullable|exists:job_cards,id'
+        ];
     }
 }

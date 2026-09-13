@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\JobCardInspectionController;
 use App\Http\Controllers\Api\V1\MetricsController;
 use App\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\PartsRequestController;
+use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QcReviewController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
@@ -174,6 +175,9 @@ Route::prefix('v1')->group(function () {
             ->names('api.v1.roles');
         Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions'])
             ->name('api.v1.roles.permissions.sync');
+            
+        Route::get('/permissions', [PermissionController::class, 'index'])
+            ->name('api.v1.permissions.index');
 
         // Settings
         Route::get('/settings', [SettingsController::class, 'index'])->name('api.v1.settings.index');
