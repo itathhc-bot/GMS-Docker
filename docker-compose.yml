@@ -23,6 +23,11 @@ x-backend-base: &backend-base
   build:
     context: .
     dockerfile: docker/backend/Dockerfile
+    args:
+      - VITE_REVERB_APP_KEY=${VITE_REVERB_APP_KEY}
+      - VITE_REVERB_HOST=${VITE_REVERB_HOST}
+      - VITE_REVERB_PORT=${VITE_REVERB_PORT}
+      - VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
   env_file: .env
   volumes:
     - app-storage:/var/www/html/storage
