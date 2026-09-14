@@ -9,9 +9,11 @@ use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Permission::class);
+        if (!$request->user()->hasRole('admin') && !$request->user()->can('users.view')) {
+            abort(403, 'Unauthorized');
+        }
         $permissions = Permission::all();
         return response()->json($permissions);
     }

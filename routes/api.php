@@ -190,6 +190,7 @@ Route::prefix('v1')->group(function () {
 
         // Audit Logs
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('api.v1.audit-logs.index');
+        Route::post('/audit-logs', [AuditLogController::class, 'store'])->name('api.v1.audit-logs.store');
 
         // Bay Comments
         Route::get('/bay-comments', [BayCommentController::class, 'index'])->name('api.v1.bay-comments.index');

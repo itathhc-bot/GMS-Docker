@@ -40,6 +40,12 @@ class AppServiceProvider extends ServiceProvider
             return 'App\\Policies\\' . class_basename($modelClass) . 'Policy';
         });
 
+        Gate::before(function ($user, $ability) {
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('admin')) {
+                return true;
+            }
+        });
+
         if($this->app->environment('production')) {
             URL::forceScheme('https');
         }

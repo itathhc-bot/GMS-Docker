@@ -91,12 +91,15 @@ class JobCardService
 
     protected function logAudit(string $actorId, string $action, string $type, string $entityId, array $details)
     {
+        $actor = User::find($actorId);
         AuditLog::create([
-            'actor_id' => $actorId,
-            'action' => $action,
-            'entity_type' => $type,
-            'entity_id' => $entityId,
-            'details' => $details,
+            'log_type'      => 'admin',
+            'actor_user_id' => $actorId,
+            'actor_name'    => $actor?->name,
+            'action'        => $action,
+            'entity_type'   => $type,
+            'entity_id'     => $entityId,
+            'details'       => $details,
         ]);
     }
 }

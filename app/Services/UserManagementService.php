@@ -69,7 +69,7 @@ class UserManagementService
                 $user->syncRoles($rolesToAssign);
             }
 
-            $this->logAudit($actorId, 'create', 'User', $user->id, ['created_user' => $user->email]);
+            $this->logAudit($actorId, 'user_created', 'User', $user->id, ['email' => $user->email, 'role' => $data['role'] ?? null], $user->id, $user->name);
 
             return $user->load('profile', 'roles');
         });
@@ -121,7 +121,7 @@ class UserManagementService
                 $user->syncRoles($rolesToAssign);
             }
 
-            $this->logAudit($actorId, 'update', 'User', $user->id, ['updated_fields' => array_keys($data)]);
+            $this->logAudit($actorId, 'role_assigned', 'User', $user->id, ['updated_fields' => array_keys($data)], $user->id, $user->name);
 
             return $user->load('profile', 'roles');
         });
@@ -132,7 +132,7 @@ class UserManagementService
         $user = $this->getUser($id);
         $user->update(['is_active' => false]);
         $user->tokens()->delete();
-        $this->logAudit($actorId, 'deactivate', 'User', $user->id, []);
+        $this->logAudit($actorId, 'user_deactivated', 'User', $user->id, [], $user->id, $user->name);
         return $user;
     }
 
@@ -140,7 +140,7 @@ class UserManagementService
     {
         $user = $this->getUser($id);
         $user->update(['is_active' => true]);
-        $this->logAudit($actorId, 'reactivate', 'User', $user->id, []);
+        $this->logAudit($actorId, 'user_reactivated', 'User', $user->id, [], $user->id, $user->name);
         return $user;
     }
 
@@ -148,7 +148,7 @@ class UserManagementService
     {
         $user = $this->getUser($userId);
         $user->assignRole($role);
-        $this->logAudit($actorId, 'assign_role', 'User', $user->id, ['role' => $role]);
+        $this->logAudit($actorId, 'role_assigned', 'User', $user->id, ['role' => $role], $user->id, $user->name);
         return $user;
     }
 
@@ -156,7 +156,7 @@ class UserManagementService
     {
         $user = $this->getUser($userId);
         $user->removeRole($role);
-        $this->logAudit($actorId, 'remove_role', 'User', $user->id, ['role' => $role]);
+        $this->logAudit($actorId, 'role_removed', 'User', $user->id, ['role' => $role], $user->id, $user->name);
         return $user;
     }
 
@@ -165,24 +165,36 @@ class UserManagementService
         $user = $this->getUser($userId);
         $user->update(['password' => Hash::make($password)]);
         $user->tokens()->delete();
-        $this->logAudit($actorId, 'set_password', 'User', $user->id, []);
+        $this->logAudit($actorId, 'password_set', 'User', $user->id, [], $user->id, $user->name);
         return $user;
     }
 
     public function sendPasswordReset(string $userId, string $actorId)
     {
-        // Implementation for sending password reset link
-        $this->logAudit($actorId, 'send_password_reset', 'User', $userId, []);
+        $user = User::find($userId);
+        $this->logAudit($actorId, 'password_reset_sent', 'User', $userId, [], $userId, $user?->name);
     }
 
-    protected function logAudit(string $actorId, string $action, string $type, string $entityId, array $details)
-    {
+    protected function logAudit(
+        string $actorId,
+        string $action,
+        string $type,
+        string $entityId,
+        array $details = [],
+        ?string $targetUserId = null,
+        ?string $targetName = null
+    ) {
+        $actor = User::find($actorId);
         AuditLog::create([
-            'actor_id' => $actorId,
-            'action' => $action,
-            'entity_type' => $type,
-            'entity_id' => $entityId,
-            'details' => $details,
+            'log_type'       => 'admin',
+            'actor_user_id'  => $actorId,
+            'actor_name'     => $actor?->name,
+            'target_user_id' => $targetUserId,
+            'target_name'    => $targetName,
+            'action'         => $action,
+            'entity_type'    => $type,
+            'entity_id'      => $entityId,
+            'details'        => $details,
         ]);
     }
 }
