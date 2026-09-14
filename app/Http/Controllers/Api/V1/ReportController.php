@@ -16,7 +16,7 @@ class ReportController extends Controller
         $this->authorize('reports.view');
         
         try {
-            $stats = $this->service->getDashboardStats();
+            $stats = $this->service->dashboardStats();
             return response()->json($stats);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to load dashboard: ' . $e->getMessage()], 500);
@@ -28,8 +28,7 @@ class ReportController extends Controller
         $this->authorize('reports.view');
 
         try {
-            $filters = $request->only(['date_from', 'date_to', 'department', 'status']);
-            $report = $this->service->getVehicleReport($filters);
+            $report = $this->service->vehicles();
             return response()->json($report);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to load vehicle report: ' . $e->getMessage()], 500);
@@ -41,8 +40,7 @@ class ReportController extends Controller
         $this->authorize('reports.view');
 
         try {
-            $filters = $request->only(['date_from', 'date_to', 'status', 'mechanic_id']);
-            $report = $this->service->getJobCardReport($filters);
+            $report = $this->service->jobCards();
             return response()->json($report);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to load job card report: ' . $e->getMessage()], 500);
@@ -54,14 +52,7 @@ class ReportController extends Controller
         $this->authorize('reports.view');
 
         try {
-            $filters = $request->only(['date_from', 'date_to']);
-            if ($request->query('export') === 'csv') {
-                $exportService = app(\App\Services\ExportService::class);
-                $path = $exportService->exportPartsRequestsToCsv($filters);
-                return response()->json(['message' => 'Export generated', 'path' => $path]);
-            }
-            
-            $report = $this->service->getPartsReport($filters);
+            $report = $this->service->parts();
             return response()->json($report);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to load parts report: ' . $e->getMessage()], 500);
