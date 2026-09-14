@@ -13,6 +13,15 @@ class StoreDriverRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['name' => 'required|string', 'license_number' => 'required|string'];
+        return [
+            'full_name'       => 'required|string|max:255',
+            'license_number'  => 'nullable|string|max:255',
+            'license_expiry'  => 'nullable|date',
+            'phone'           => 'nullable|string|max:50',
+            'email'           => 'nullable|email|max:255',
+            'department'      => 'nullable|string|max:255',
+            'notes'           => 'nullable|string',
+            'is_active'       => 'nullable|boolean',
+        ];
     }
 }

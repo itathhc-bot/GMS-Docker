@@ -35,16 +35,38 @@ class UserManagementService
     {
         return DB::transaction(function () use ($data, $actorId) {
             $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
+                'name'      => $data['full_name'],
+                'email'     => $data['email'],
+                'password'  => Hash::make($data['password']),
                 'is_active' => $data['is_active'] ?? true,
             ]);
 
-            $user->profile()->create($data['profile'] ?? []);
+            // Create profile with provided fields
+            $user->profile()->create([
+                'full_name'   => $data['full_name'],
+                'employee_id' => $data['employee_id'] ?? null,
+                'department'  => $data['department'] ?? null,
+            ]);
 
-            if (isset($data['roles'])) {
-                $user->assignRole($data['roles']);
+            // Assign primary role
+            $rolesToAssign = [];
+            if (!empty($data['role'])) {
+                $rolesToAssign[] = $data['role'];
+            }
+            // Assign extra system roles
+            if (!empty($data['extra_system_roles']) && is_array($data['extra_system_roles'])) {
+                foreach ($data['extra_system_roles'] as $r) {
+                    $rolesToAssign[] = $r;
+                }
+            }
+            // Assign custom roles by ID
+            if (!empty($data['custom_role_ids']) && is_array($data['custom_role_ids'])) {
+                foreach ($data['custom_role_ids'] as $roleId) {
+                    $rolesToAssign[] = $roleId;
+                }
+            }
+            if (!empty($rolesToAssign)) {
+                $user->syncRoles($rolesToAssign);
             }
 
             $this->logAudit($actorId, 'create', 'User', $user->id, ['created_user' => $user->email]);
@@ -57,21 +79,46 @@ class UserManagementService
     {
         return DB::transaction(function () use ($id, $data, $actorId) {
             $user = $this->getUser($id);
-            
-            $user->update([
-                'name' => $data['name'] ?? $user->name,
-                'email' => $data['email'] ?? $user->email,
-            ]);
 
-            if (isset($data['profile'])) {
-                $user->profile()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    $data['profile']
-                );
+            $userUpdates = [];
+            if (isset($data['full_name'])) {
+                $userUpdates['name'] = $data['full_name'];
+            }
+            if (isset($data['email'])) {
+                $userUpdates['email'] = $data['email'];
+            }
+            if (!empty($userUpdates)) {
+                $user->update($userUpdates);
             }
 
-            if (isset($data['roles'])) {
-                $user->syncRoles($data['roles']);
+            // Update profile
+            $profileData = array_filter([
+                'full_name'   => $data['full_name'] ?? null,
+                'employee_id' => $data['employee_id'] ?? null,
+                'department'  => $data['department'] ?? null,
+            ], fn($v) => $v !== null);
+
+            if (!empty($profileData)) {
+                $user->profile()->updateOrCreate(['user_id' => $user->id], $profileData);
+            }
+
+            // Sync roles
+            $rolesToAssign = [];
+            if (!empty($data['role'])) {
+                $rolesToAssign[] = $data['role'];
+            }
+            if (!empty($data['extra_system_roles']) && is_array($data['extra_system_roles'])) {
+                foreach ($data['extra_system_roles'] as $r) {
+                    $rolesToAssign[] = $r;
+                }
+            }
+            if (!empty($data['custom_role_ids']) && is_array($data['custom_role_ids'])) {
+                foreach ($data['custom_role_ids'] as $roleId) {
+                    $rolesToAssign[] = $roleId;
+                }
+            }
+            if (!empty($rolesToAssign)) {
+                $user->syncRoles($rolesToAssign);
             }
 
             $this->logAudit($actorId, 'update', 'User', $user->id, ['updated_fields' => array_keys($data)]);

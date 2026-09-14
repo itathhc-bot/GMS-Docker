@@ -13,6 +13,14 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['email' => 'sometimes|email', 'name' => 'sometimes|string'];
+        return [
+            'full_name'          => 'sometimes|string|max:255',
+            'email'              => 'sometimes|email|max:255',
+            'employee_id'        => 'sometimes|nullable|string|max:255',
+            'department'         => 'sometimes|nullable|string|max:255',
+            'role'               => 'sometimes|string',
+            'extra_system_roles' => 'sometimes|array',
+            'custom_role_ids'    => 'sometimes|array',
+        ];
     }
 }
