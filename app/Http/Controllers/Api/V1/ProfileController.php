@@ -15,10 +15,9 @@ class ProfileController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $profile = $user->profile;
-        if (!$profile) {
-            return response()->json(['message' => 'Profile not found'], 404);
-        }
+        $profile = $user->profile()->firstOrCreate([
+            'user_id' => $user->id
+        ]);
 
         $validated = $request->validate([
             'preferred_language' => 'nullable|string|max:10',

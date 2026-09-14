@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\FinalizeQcReviewRequest;
 use App\Http\Requests\Api\V1\StoreQcReviewRequest;
 use App\Models\QcReview;
-use App\Repositories\Interfaces\QcReviewRepositoryInterface;
+use App\Repositories\Contracts\QcReviewRepositoryInterface;
 use App\Services\QcService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

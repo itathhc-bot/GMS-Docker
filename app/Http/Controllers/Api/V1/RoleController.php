@@ -13,7 +13,7 @@ class RoleController extends Controller
 
     public function index(): JsonResponse
     {
-        $this->authorize('viewAny', Role::class);
+        $this->authorize('users.view');
         $roles = Role::with('permissions')->get();
         return response()->json($roles);
     }
@@ -21,13 +21,13 @@ class RoleController extends Controller
     public function show(int $id): JsonResponse
     {
         $role = Role::with('permissions')->findOrFail($id);
-        $this->authorize('view', $role);
+        $this->authorize('users.view');
         return response()->json($role);
     }
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Role::class);
+        $this->authorize('users.assign_role');
         $request->validate([
             'name' => 'required|string|unique:roles,name',
             'permissions' => 'nullable|array',
@@ -69,7 +69,7 @@ class RoleController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $role = Role::findOrFail($id);
-        $this->authorize('delete', $role);
+        $this->authorize('users.assign_role');
 
         if (in_array($role->name, $this->systemRoles)) {
             return response()->json(['message' => 'Cannot delete a system role'], 403);
@@ -86,7 +86,7 @@ class RoleController extends Controller
     public function syncPermissions(Request $request, int $id): JsonResponse
     {
         $role = Role::findOrFail($id);
-        $this->authorize('update', $role);
+        $this->authorize('users.assign_role');
 
         $request->validate([
             'permissions' => 'required|array',

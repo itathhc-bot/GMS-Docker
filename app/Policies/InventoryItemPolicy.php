@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\InventoryItem;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class InventoryPolicy
+class InventoryItemPolicy
 {
     use HandlesAuthorization;
 

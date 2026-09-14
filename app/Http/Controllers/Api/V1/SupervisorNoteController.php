@@ -12,7 +12,7 @@ class SupervisorNoteController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', SupervisorNote::class);
+        $this->authorize('job_cards.view');
         
         $notes = SupervisorNote::with(['supervisor', 'jobCard'])->latest()->paginate(15);
         return response()->json($notes);
@@ -20,7 +20,7 @@ class SupervisorNoteController extends Controller
 
     public function store(StoreSupervisorNoteRequest $request): JsonResponse
     {
-        $this->authorize('create', SupervisorNote::class);
+        $this->authorize('job_cards.sign_supervisor');
 
         try {
             $data = $request->validated();

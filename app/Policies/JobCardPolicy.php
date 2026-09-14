@@ -8,7 +8,7 @@ class JobCardPolicy
 {
     use HandlesAuthorization;
     public function viewAny(User $user) { return $user->hasPermissionTo('job_cards.view'); }
-    public function view(User $user, JobCard $jobCard) { return clone $user->hasPermissionTo('job_cards.view'); }
+    public function view(User $user, JobCard $jobCard) { return $user->hasPermissionTo('job_cards.view'); }
     public function create(User $user) { return $user->hasPermissionTo('job_cards.create'); }
     public function update(User $user, JobCard $jobCard) { return $user->hasPermissionTo('job_cards.edit'); }
     public function delete(User $user, JobCard $jobCard) { return $user->hasPermissionTo('job_cards.delete'); }

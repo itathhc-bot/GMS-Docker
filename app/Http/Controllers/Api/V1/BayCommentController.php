@@ -13,7 +13,7 @@ class BayCommentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', BayComment::class);
+        $this->authorize('job_cards.view');
         
         $request->validate(['bay_number' => 'nullable|string']);
 
@@ -27,7 +27,7 @@ class BayCommentController extends Controller
 
     public function store(StoreBayCommentRequest $request): JsonResponse
     {
-        $this->authorize('create', BayComment::class);
+        $this->authorize('job_cards.create');
 
         try {
             $data = $request->validated();

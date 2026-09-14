@@ -13,7 +13,7 @@ class ReportController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $this->authorize('viewDashboard', \App\Models\Report::class);
+        $this->authorize('reports.view');
         
         try {
             $stats = $this->service->getDashboardStats();
@@ -25,7 +25,7 @@ class ReportController extends Controller
 
     public function vehicles(Request $request): JsonResponse
     {
-        $this->authorize('viewReports', \App\Models\Report::class);
+        $this->authorize('reports.view');
 
         try {
             $filters = $request->only(['date_from', 'date_to', 'department', 'status']);
@@ -38,7 +38,7 @@ class ReportController extends Controller
 
     public function jobCards(Request $request): JsonResponse
     {
-        $this->authorize('viewReports', \App\Models\Report::class);
+        $this->authorize('reports.view');
 
         try {
             $filters = $request->only(['date_from', 'date_to', 'status', 'mechanic_id']);
@@ -51,7 +51,7 @@ class ReportController extends Controller
 
     public function parts(Request $request): JsonResponse
     {
-        $this->authorize('viewReports', \App\Models\Report::class);
+        $this->authorize('reports.view');
 
         try {
             $filters = $request->only(['date_from', 'date_to']);
