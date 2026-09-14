@@ -7,6 +7,13 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class JobCardPolicy
 {
     use HandlesAuthorization;
+
+    public function before($user, string $ability): bool|null
+    {
+        if ($user->hasRole('admin')) return true;
+        return null;
+    }
+
     public function viewAny(User $user) { return $user->hasPermissionTo('job_cards.view'); }
     public function view(User $user, JobCard $jobCard) { return $user->hasPermissionTo('job_cards.view'); }
     public function create(User $user) { return $user->hasPermissionTo('job_cards.create'); }

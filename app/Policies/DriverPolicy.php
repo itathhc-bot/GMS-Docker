@@ -10,9 +10,15 @@ class DriverPolicy
 {
     use HandlesAuthorization;
 
-    public function viewAny(User $user) { return $user->hasPermissionTo('driver.view'); }
-    public function view(User $user, $model) { return $user->hasPermissionTo('driver.view'); }
-    public function create(User $user) { return $user->hasPermissionTo('driver.create'); }
-    public function update(User $user, $model) { return $user->hasPermissionTo('driver.edit'); }
-    public function delete(User $user, $model) { return $user->hasPermissionTo('driver.delete'); }
+    public function before(User $user, string $ability): bool|null
+    {
+        if ($user->hasRole('admin')) return true;
+        return null;
+    }
+
+    public function viewAny(User $user): bool  { return $user->hasAnyPermission(['drivers.view']); }
+    public function view(User $user, $model): bool { return $user->hasAnyPermission(['drivers.view']); }
+    public function create(User $user): bool   { return $user->hasAnyPermission(['drivers.create']); }
+    public function update(User $user, $model): bool { return $user->hasAnyPermission(['drivers.edit']); }
+    public function delete(User $user, $model): bool { return $user->hasAnyPermission(['drivers.delete']); }
 }

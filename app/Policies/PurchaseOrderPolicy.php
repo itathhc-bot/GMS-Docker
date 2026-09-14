@@ -7,6 +7,13 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class PurchaseOrderPolicy
 {
     use HandlesAuthorization;
+
+    public function before($user, string $ability): bool|null
+    {
+        if ($user->hasRole('admin')) return true;
+        return null;
+    }
+
     public function viewAny(User $user) { return $user->hasPermissionTo('po.view'); }
     public function view(User $user, PurchaseOrder $po) { return $user->hasPermissionTo('po.view'); }
     public function create(User $user) { return $user->hasPermissionTo('po.create'); }

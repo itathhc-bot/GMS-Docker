@@ -15,7 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // create permissions
         $permissions = [
-            'vehicles.view', 'vehicles.create', 'vehicles.edit', 'vehicles.delete',
+            'vehicles.view', 'vehicles.create', 'vehicles.edit', 'vehicles.delete', 'vehicles.scan',
             'job_cards.view', 'job_cards.create', 'job_cards.edit', 'job_cards.delete', 'job_cards.assign', 'job_cards.sign_mechanic', 'job_cards.sign_supervisor',
             'parts.view', 'parts.request', 'parts.approve', 'parts.reject', 'parts.issue',
             'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.delete',
@@ -24,8 +24,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'scan.view', 'scan.create',
             'reports.view', 'reports.export',
             'users.view', 'users.create', 'users.edit', 'users.deactivate', 'users.assign_role',
+            'roles.manage',
             'settings.view', 'settings.edit',
-            'audit.view'
+            'audit.view',
+            'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.delete',
+            'operations.view',
+            'jobcards.view',
         ];
 
         foreach ($permissions as $permission) {
