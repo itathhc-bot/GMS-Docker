@@ -166,8 +166,7 @@ export default function QCReview() {
         const review: any = await getQcReview(job.qc_review_id);
         const data = review.checklist_items || [];
         if (data && data.length > 0) {
-          const chkArray = Array.isArray(data) ? data : (data?.data ?? []);
-          setChecklist(chkArray.map((item: any) => ({
+          setChecklist(data.map((item: any) => ({
             id: `item-${item.id}`,
             db_id: item.id,
             name: item.item_name,
