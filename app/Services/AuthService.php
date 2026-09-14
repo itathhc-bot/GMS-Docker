@@ -37,6 +37,12 @@ class AuthService
             ]);
         }
 
+        \Illuminate\Support\Facades\Auth::login($user);
+        $request = request();
+        if ($request && $request->hasSession()) {
+            $request->session()->regenerate();
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
@@ -47,7 +53,13 @@ class AuthService
 
     public function logout(User $user)
     {
-        $user->currentAccessToken()->delete();
+        $user->currentAccessToken()?->delete();
+        \Illuminate\Support\Facades\Auth::guard('web')->logout();
+        $request = request();
+        if ($request && $request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
     }
 
     public function me(User $user)
