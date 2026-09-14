@@ -168,8 +168,8 @@ export default function UserManagement() {
         employee_id: u.employee_id ?? null,
         department: u.department ?? null,
         is_deactivated: u.is_deactivated ?? false,
-        roles: (u.roles ?? []) as AppRole[],
-        custom_roles: (u.custom_roles ?? []) as CustomRoleAssignment[],
+        roles: (Array.isArray(u.roles) ? u.roles.map((r: any) => typeof r === 'object' ? r.name : r) : []) as AppRole[],
+        custom_roles: (Array.isArray(u.custom_roles) ? u.custom_roles : []) as CustomRoleAssignment[],
       }));
       setUsers(combined);
     } catch {

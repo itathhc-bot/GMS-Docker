@@ -11,8 +11,8 @@ class AuthService
     private function formatUser(User $user)
     {
         $user->loadMissing('profile');
-        $roles = $user->getRoleNames()->toArray();
-        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+        $roles = $user->getRoleNames()->values()->toArray();
+        $permissions = $user->getAllPermissions()->pluck('name')->values()->toArray();
 
         $userData = $user->toArray();
         $userData['roles'] = $roles;
@@ -35,12 +35,6 @@ class AuthService
             throw ValidationException::withMessages([
                 'email' => ['This account has been deactivated.'],
             ]);
-        }
-
-        \Illuminate\Support\Facades\Auth::login($user);
-        $request = request();
-        if ($request && $request->hasSession()) {
-            $request->session()->regenerate();
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

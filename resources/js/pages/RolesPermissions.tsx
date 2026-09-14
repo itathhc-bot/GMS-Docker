@@ -72,11 +72,12 @@ export default function RolesPermissions() {
 
       for (const r of rolesData) {
         newRoles.push({ id: r.id, name: r.name, label: r.label ?? r.name, description: r.description ?? null, is_system: r.is_system ?? false, system_role: r.system_role ?? null });
-        newGrants.set(r.id, new Set<string>(r.permissions ?? []));
+        const permStrings = Array.isArray(r.permissions) ? r.permissions.map((p: any) => typeof p === 'object' ? p.name : p) : [];
+        newGrants.set(r.id, new Set<string>(permStrings));
         newCounts.set(r.id, r.user_count ?? 0);
         // Collect permissions from all roles to build a full permission list
-        for (const pKey of (r.permissions ?? [])) {
-          if (!seenPerms.has(pKey)) {
+        for (const pKey of permStrings) {
+          if (typeof pKey === 'string' && !seenPerms.has(pKey)) {
             seenPerms.add(pKey);
             const [category] = pKey.split('.');
             allPerms.push({ key: pKey, label: pKey, category: category ?? 'general', description: null });
