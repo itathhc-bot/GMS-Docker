@@ -12,14 +12,15 @@ class BayComment extends Model
 
     protected $fillable = [
         'job_card_id',
-        'author_id',
+        'author_user_id',
+        'author_name',
         'bay_number',
         'comment',
     ];
 
     public function author()
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, 'author_user_id');
     }
 
     public function jobCard()

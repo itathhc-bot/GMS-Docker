@@ -14,15 +14,19 @@ class BayCommentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $this->authorize('job_cards.view');
-        
-        $request->validate(['bay_number' => 'nullable|string']);
 
-        $query = BayComment::with('author');
-        if ($request->has('bay_number')) {
-            $query->where('bay_number', $request->bay_number);
+        $query = BayComment::with('author', 'jobCard');
+
+        if ($request->has('bay')) {
+            $query->where('bay_number', $request->bay);
         }
 
-        return response()->json($query->latest()->paginate(15));
+        if ($request->has('job_card_id')) {
+            $query->where('job_card_id', $request->job_card_id);
+        }
+
+        $comments = $query->orderBy('created_at', 'desc')->get();
+        return response()->json($comments);
     }
 
     public function store(StoreBayCommentRequest $request): JsonResponse
@@ -31,7 +35,8 @@ class BayCommentController extends Controller
 
         try {
             $data = $request->validated();
-            $data['author_id'] = $request->user()->id;
+            $data['author_user_id'] = $request->user()->id;
+            $data['author_name'] = $request->user()->name;
             
             $comment = BayComment::create($data);
             $comment->load('author');
@@ -40,17 +45,18 @@ class BayCommentController extends Controller
 
             return response()->json($comment, 201);
         } catch (\Exception $e) {
+            \Log::error('BayComment creation failed: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to post comment: ' . $e->getMessage()], 500);
         }
     }
 
     public function destroy(BayComment $bayComment): JsonResponse
     {
-        $this->authorize('delete', $bayComment);
+        $this->authorize('job_cards.create');
 
         try {
             $bayComment->delete();
-            return response()->json(['message' => 'Comment deleted successfully']);
+            return response()->json(null, 204);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to delete comment: ' . $e->getMessage()], 500);
         }

@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Supplier;
+use App\Models\User;
+
+class SupplierPolicy
+{
+    public function viewAny(User $user): bool
+    {
+        return $user->hasPermissionTo('po.view') || $user->hasPermissionTo('po.create');
+    }
+
+    public function view(User $user, Supplier $supplier): bool
+    {
+        return $user->hasPermissionTo('po.view') || $user->hasPermissionTo('po.create');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->hasPermissionTo('po.create');
+    }
+
+    public function update(User $user, Supplier $supplier): bool
+    {
+        return $user->hasPermissionTo('po.create');
+    }
+
+    public function delete(User $user, Supplier $supplier): bool
+    {
+        return $user->hasPermissionTo('po.create');
+    }
+}
