@@ -150,12 +150,12 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const [usersData, rolesData] = await Promise.all([
-        usersApi.getUsers({ per_page: 500 }),
-        getRoles(),
+        api.get("/users?per_page=500").then((r) => r.data),
+        api.get("/roles").then((r) => r.data),
       ]);
 
-      const userList = Array.isArray(usersData) ? usersData : (usersData?.data ?? []);
-      const rolesArray = Array.isArray(rolesData) ? rolesData : (rolesData?.data ?? []);
+      const userList = Array.isArray(usersData) ? usersData : (Array.isArray(usersData?.data) ? usersData.data : []);
+      const rolesArray = Array.isArray(rolesData) ? rolesData : (Array.isArray(rolesData?.data) ? rolesData.data : []);
       const defsList: RoleDefinition[] = rolesArray.map((r: any) => ({
         id: r.id, name: r.name, label: r.label ?? r.name,
         is_system: r.is_system ?? false, system_role: r.system_role ?? null,

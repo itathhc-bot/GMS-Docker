@@ -101,8 +101,9 @@ export default function NotificationBell() {
 
     // ── HISTORY (recent approvals / rejections) ────────────────
     try {
-      const { data: audit } = await api.get('/approval-audits', { params: { limit: 15 } });
-      (audit as any[] | null)?.forEach((r) => {
+      const { data: audit } = await api.get('/audit-logs', { params: { limit: 15, action: 'approval' } });
+      const auditArray = Array.isArray(audit) ? audit : (Array.isArray((audit as any)?.data) ? (audit as any).data : []);
+      auditArray.forEach((r: any) => {
         const href = r.entity_type === "purchase_order"
           ? `/approvals/po/${r.entity_id}/${r.stage === "finance" ? "finance" : "manager"}`
           : r.entity_type === "parts_request"

@@ -55,9 +55,10 @@ export default function AuditLogPanel({ refreshKey = 0 }: Props) {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await api.get('/admin-audit-log', { params: { limit: 20, sort: '-created_at' } });
+        const { data } = await api.get('/audit-logs', { params: { limit: 20, sort: '-created_at' } });
         if (!active) return;
-        setEntries(data as AuditEntry[]);
+        const arr = Array.isArray(data) ? data : (Array.isArray((data as any)?.data) ? (data as any).data : []);
+        setEntries(arr as AuditEntry[]);
       } catch (error) {
         // Handle error
       } finally {
