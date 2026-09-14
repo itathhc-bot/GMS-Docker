@@ -20,11 +20,15 @@ class ProfileController extends Controller
         ]);
 
         $validated = $request->validate([
-            'preferred_language' => 'nullable|string|max:10',
-            'parts_export_columns' => 'nullable|array',
+            'preferred_language'            => 'nullable|string|max:10',
+            'parts_export_columns'          => 'nullable|array',
             'parts_history_location_filter' => 'nullable|string|max:50',
-            'preview_cache_enabled' => 'nullable|boolean',
-            'preview_cache_ttl_seconds' => 'nullable|integer',
+            'preview_cache_enabled'         => 'nullable|boolean',
+            'preview_cache_ttl_seconds'     => 'nullable|integer',
+            'full_name'                     => 'nullable|string|max:255',
+            'employee_id'                   => 'nullable|string|max:255',
+            'department'                    => 'nullable|string|max:255',
+            'avatar_url'                    => 'nullable|string|max:2048',
         ]);
 
         $profile->update($validated);

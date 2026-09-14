@@ -12,10 +12,19 @@ class Driver extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'license_number',
-        'phone',
+        'full_name',
         'email',
+        'phone',
+        'license_number',
+        'license_expiry',
+        'department',
+        'is_active',
+        'notes',
+    ];
+
+    protected $casts = [
+        'license_expiry' => 'date',
+        'is_active'      => 'boolean',
     ];
 
     public function vehicles()
