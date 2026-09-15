@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const langHandlerRef = useRef<((lng: string) => void) | null>(null);
+  const lastPatchedLangRef = useRef<string | null>(null);
 
   const fetchMe = async (): Promise<AuthUser | null> => {
     try {
@@ -64,7 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     const me = await fetchMe();
     setUser(me);
-    if (me?.profile) applyLanguage(me.profile.preferred_language);
+    if (me?.profile?.preferred_language) {
+      lastPatchedLangRef.current = me.profile.preferred_language;
+      applyLanguage(me.profile.preferred_language);
+    }
   };
 
   useEffect(() => {
@@ -87,6 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!user) return;
       if (user.profile?.preferred_language === lng) return;
+      if (lastPatchedLangRef.current === lng) return;
+
+      lastPatchedLangRef.current = lng;
 
       try {
         await api.patch("/profile", { preferred_language: lng });

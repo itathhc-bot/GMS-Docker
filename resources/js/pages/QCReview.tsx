@@ -133,16 +133,18 @@ export default function QCReview() {
       const jobData = await getJobCards({ status: "QC Review" });
       if (!jobData) { setLoading(false); return; }
 
+      const rawJobs = Array.isArray(jobData) ? jobData : (jobData?.data ?? []);
       const reviews = await getQcReviews();
-      const reviewMap = new Map((reviews || []).map(r => [r.job_card_id, r]));
+      const reviewList = Array.isArray(reviews) ? reviews : (reviews?.data ?? []);
+      const reviewMap = new Map((reviewList || []).map((r: any) => [r.job_card_id, r]));
 
-      const mapped: QCJob[] = jobData.map((j: any) => ({
+      const mapped: QCJob[] = rawJobs.map((j: any) => ({
         id: j.id,
         job_card_id: j.id,
         qc_review_id: reviewMap.get(j.id)?.id || null,
         jobNumber: j.job_number || j.id.substring(0,8),
-        vehicle: (j.vehicle || j.vehicles)?.plate_number || "—",
-        vehicleDetail: [(j.vehicle || j.vehicles)?.make, (j.vehicle || j.vehicles)?.model, (j.vehicle || j.vehicles)?.department].filter(Boolean).join(" • "),
+        vehicle: (j.vehicle || j.vehicles)?.plate_number || j.vehicle_plate || "—",
+        vehicleDetail: [(j.vehicle || j.vehicles)?.make || j.vehicle_make, (j.vehicle || j.vehicles)?.model || j.vehicle_model, (j.vehicle || j.vehicles)?.department].filter(Boolean).join(" • "),
         priority: j.priority,
         status: reviewMap.get(j.id) ? "In Review" : "Awaiting Review",
         bay: j.bay_number || "—",
@@ -164,19 +166,19 @@ export default function QCReview() {
     if (job.qc_review_id) {
       try {
         const review: any = await getQcReview(job.qc_review_id);
-        const data = review.checklist_items || [];
+        const data = review.checklist_items || review.checklistItems || [];
         if (data && data.length > 0) {
           const chkArray = Array.isArray(data) ? data : (data?.data ?? []);
           setChecklist(chkArray.map((item: any) => ({
             id: `item-${item.id}`,
             db_id: item.id,
-            name: item.item_name,
-            category: item.category,
+            name: item.item_name || item.name,
+            category: item.category || "General",
             result: item.result as ChecklistItem["result"],
             notes: item.notes || "",
-            photoUrl: item.photo_url,
+            photoUrl: item.photo_url || item.photoUrl || null,
           })));
-          setRemarks(review.remarks || "");
+          setRemarks(review.remarks || review.notes || "");
           return;
         }
       } catch(e) {
@@ -248,6 +250,7 @@ export default function QCReview() {
         status: finalStatus,
         remarks,
         signature_data: signatureData,
+        signature: signatureData,
         reviewed_at: new Date().toISOString(),
       });
 

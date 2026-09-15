@@ -11,15 +11,20 @@ use Illuminate\Support\Facades\Log;
 
 class PartsApprovalService
 {
-    public function approve(string $id, string $actorId)
+    public function approve(string $id, string $actorId, ?string $remarks = null)
     {
         $request = PartsRequest::findOrFail($id);
-        $request->update([
-            'status' => 'approved',
+        $updateData = [
+            'status'      => 'Approved',
             'approved_by' => $actorId,
-        ]);
+        ];
+        if ($remarks !== null) {
+            $updateData['supervisor_remarks'] = $remarks;
+        }
 
-        $this->logAudit($actorId, 'approve', 'PartsRequest', $request->id, []);
+        $request->update($updateData);
+
+        $this->logAudit($actorId, 'approve', 'PartsRequest', $request->id, ['supervisor_remarks' => $remarks]);
         return $request;
     }
 
@@ -27,8 +32,8 @@ class PartsApprovalService
     {
         $request = PartsRequest::findOrFail($id);
         $request->update([
-            'status' => 'rejected',
-            'notes' => $reason,
+            'status'         => 'Rejected',
+            'rejection_note' => $reason,
         ]);
 
         $this->logAudit($actorId, 'reject', 'PartsRequest', $request->id, ['reason' => $reason]);
@@ -40,14 +45,34 @@ class PartsApprovalService
         return DB::transaction(function () use ($id, $data, $actorId) {
             $request = PartsRequest::findOrFail($id);
             
-            // Assuming $data contains part_number and quantity issued
-            // If the model was richer, we would iterate through request items. 
-            // In the provided schema, parts request doesn't have explicit items described, so we assume generic decrement if needed or it's handled via related InventoryItem.
-            
-            $request->update([
-                'status' => 'issued',
-                'issued_by' => $actorId,
-            ]);
+            $updateData = [
+                'status'            => 'Issued',
+                'issued_by'         => $actorId,
+                'issued_at'         => now(),
+                'collected_by_name' => $data['collected_by_name'] ?? $request->collected_by_name,
+                'signature_data'    => $data['signature_data'] ?? $request->signature_data,
+                'issuance_notes'    => $data['issuance_notes'] ?? $request->issuance_notes,
+            ];
+
+            if (!empty($data['bay_number'])) {
+                $updateData['bay_number'] = $data['bay_number'];
+            }
+
+            $request->update($updateData);
+
+            // Decrement inventory stock if matching item found
+            $sku = $request->part_number;
+            $inv = InventoryItem::where(function ($q) use ($sku, $request) {
+                if ($sku) {
+                    $q->where('sku', $sku)->orWhere('part_name', $request->part_name);
+                } else {
+                    $q->where('part_name', $request->part_name);
+                }
+            })->first();
+
+            if ($inv && $inv->stock_quantity >= $request->quantity) {
+                $inv->decrement('stock_quantity', (int)$request->quantity);
+            }
 
             $this->logAudit($actorId, 'issue', 'PartsRequest', $request->id, $data);
             return $request;

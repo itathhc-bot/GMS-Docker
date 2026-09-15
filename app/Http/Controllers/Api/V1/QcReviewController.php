@@ -10,6 +10,7 @@ use App\Repositories\Contracts\QcReviewRepositoryInterface;
 use App\Services\QcService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class QcReviewController extends Controller
 {
@@ -22,17 +23,30 @@ class QcReviewController extends Controller
     {
         $this->authorize('viewAny', QcReview::class);
 
-        $filters = $request->only(['status', 'job_card_id']);
-        $reviews = $this->repo->paginate(15, $filters);
+        $query = QcReview::with(['checklistItems', 'inspector.profile', 'jobCard.vehicle']);
 
-        return response()->json($reviews);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('job_card_id')) {
+            $query->where('job_card_id', $request->job_card_id);
+        }
+
+        $query->latest();
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = (int) $request->input('per_page', 15);
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     public function show(QcReview $qcReview): JsonResponse
     {
         $this->authorize('view', $qcReview);
         
-        $qcReview->load(['checklistItems', 'inspector', 'jobCard']);
+        $qcReview->load(['checklistItems', 'inspector.profile', 'jobCard.vehicle']);
 
         return response()->json($qcReview);
     }
@@ -43,12 +57,20 @@ class QcReviewController extends Controller
 
         try {
             $data = $request->validated();
-            $data['inspector_id'] = $request->user()->id;
+            $inspectorId = $request->user()?->id;
             
-            $qcReview = $this->repo->create($data);
+            $qcReview = $this->qcService->createReview($data['job_card_id'], $inspectorId);
 
-            return response()->json($qcReview, 201);
+            if (!empty($data['status'])) {
+                $qcReview->update(['status' => $data['status']]);
+            }
+            if (!empty($data['remarks']) || !empty($data['notes'])) {
+                $qcReview->update(['remarks' => $data['remarks'] ?? $data['notes']]);
+            }
+
+            return response()->json($qcReview->fresh(['checklistItems', 'inspector', 'jobCard']), 201);
         } catch (\Exception $e) {
+            Log::error('Failed to create QC review: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'Failed to create QC review: ' . $e->getMessage()], 500);
         }
     }
@@ -57,23 +79,20 @@ class QcReviewController extends Controller
     {
         $this->authorize('update', $qcReview);
 
-        $request->validate([
-            'checklist_items' => 'required|array',
-            'checklist_items.*.id' => 'required|exists:checklist_items,id',
-            'checklist_items.*.is_passed' => 'required|boolean',
-            'checklist_items.*.notes' => 'nullable|string',
-        ]);
+        $items = $request->input('items', $request->input('checklist_items', []));
+
+        if (!is_array($items)) {
+            return response()->json(['message' => 'Checklist items must be an array'], 422);
+        }
 
         try {
-            foreach ($request->checklist_items as $item) {
-                // Update checklist item logic using repo or direct update
-                $qcReview->checklistItems()->where('id', $item['id'])->update([
-                    'is_passed' => $item['is_passed'],
-                    'notes' => $item['notes'] ?? null,
-                ]);
-            }
-            return response()->json(['message' => 'Checklist updated successfully']);
+            $review = $this->qcService->updateChecklist($qcReview, $items);
+            return response()->json([
+                'message' => 'Checklist updated successfully',
+                'items' => $review->checklistItems,
+            ]);
         } catch (\Exception $e) {
+            Log::error('Failed to update checklist: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'Failed to update checklist: ' . $e->getMessage()], 500);
         }
     }
@@ -84,11 +103,14 @@ class QcReviewController extends Controller
 
         try {
             $data = $request->validated();
-            $result = $this->qcService->finalizeReview($qcReview, $data);
+            $actorId = $request->user()?->id;
+            $result = $this->qcService->finalizeReview($qcReview, $data, null, $actorId);
             
             return response()->json($result);
         } catch (\Exception $e) {
+            Log::error('Failed to finalize QC review: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'Failed to finalize QC review: ' . $e->getMessage()], 500);
         }
     }
 }
+

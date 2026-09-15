@@ -431,6 +431,7 @@ export default function PartsRequest() {
   const [loading, setLoading] = useState(false);
   const [jobCards, setJobCards] = useState<any[]>([]);
   const [mechanics, setMechanics] = useState<any[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("my_requests");
   const [selectedApproval, setSelectedApproval] = useState<string | null>(null);
   const [supervisorRemarks, setSupervisorRemarks] = useState("");
@@ -449,10 +450,10 @@ export default function PartsRequest() {
           request_number: r.request_number,
           base_request_number: r.request_number.split('-').slice(0, 2).join('-'),
           job_card_id: r.job_card_id,
-          job_number: (r.job_card as any)?.job_number || "—",
-          vehicle: (r.job_card as any)?.vehicle?.plate_number || "—",
-          vehicle_make: (r.job_card as any)?.vehicle?.make || "—",
-          mechanic: (r.requested_by_user as any)?.name || "—",
+          job_number: (r.job_card as any)?.job_number || r.job_number || "—",
+          vehicle: (r.job_card as any)?.vehicle?.plate_number || r.vehicle_plate || r.vehicle || "—",
+          vehicle_make: (r.job_card as any)?.vehicle?.make || r.vehicle_make || "—",
+          mechanic: (r.requested_by_user as any)?.profile?.full_name || (r.requested_by_user as any)?.name || r.mechanic || "—",
           part_name: r.part_name,
           part_number: r.part_number,
           quantity: r.quantity,
@@ -479,8 +480,9 @@ export default function PartsRequest() {
 
   const fetchJobCards = async () => {
     try {
-      const { data } = await api.get('/api/v1/job-cards?status_not_in=Completed,Closed');
-      setJobCards(Array.isArray(data) ? data : (data?.data ?? []));
+      const res = await api.get('/job-cards?per_page=100&status_not_in=Completed,Closed');
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+      setJobCards(list);
     } catch (e) {
       console.error("Failed to fetch job cards", e);
     }
@@ -488,10 +490,31 @@ export default function PartsRequest() {
 
   const fetchMechanics = async () => {
     try {
-      const { data } = await api.get('/api/v1/users?role=mechanic');
-      setMechanics(Array.isArray(data) ? data : (data?.data ?? []));
+      const res = await api.get('/users?role=mechanic&per_page=100');
+      let list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+      if (!list || list.length === 0) {
+        const allUsersRes = await api.get('/users?per_page=100&is_active=true');
+        list = Array.isArray(allUsersRes.data) ? allUsersRes.data : (allUsersRes.data?.data ?? []);
+      }
+      setMechanics((list || []).map((m: any) => ({
+        ...m,
+        user_id: m.id,
+        id: m.id,
+        full_name: m.profile?.full_name || m.name || m.email,
+        name: m.profile?.full_name || m.name || m.email,
+      })));
     } catch (e) {
       console.error("Failed to fetch mechanics", e);
+    }
+  };
+
+  const fetchInventory = async () => {
+    try {
+      const res = await api.get('/inventory?per_page=500');
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+      setInventoryItems(list);
+    } catch (e) {
+      console.error("Failed to fetch inventory for suggestions", e);
     }
   };
 
@@ -499,6 +522,7 @@ export default function PartsRequest() {
     fetchRequests();
     fetchJobCards();
     fetchMechanics();
+    fetchInventory();
   }, []);
 
   const myRecent = useMemo(
@@ -695,6 +719,23 @@ export default function PartsRequest() {
   const updatePartLine = (idx: number, field: keyof PartLine, value: string | number) => {
     const next = [...partLines];
     (next[idx] as any)[field] = value;
+
+    if (field === "part_name" && typeof value === "string") {
+      const match = inventoryItems.find(
+        (it) => it.part_name?.toLowerCase() === value.toLowerCase().trim()
+      );
+      if (match && match.sku && !next[idx].part_number) {
+        next[idx].part_number = match.sku;
+      }
+    } else if (field === "part_number" && typeof value === "string") {
+      const match = inventoryItems.find(
+        (it) => it.sku?.toLowerCase() === value.toLowerCase().trim()
+      );
+      if (match && match.part_name && !next[idx].part_name) {
+        next[idx].part_name = match.part_name;
+      }
+    }
+
     setPartLines(next);
   };
 
@@ -1035,11 +1076,21 @@ export default function PartsRequest() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1.5 block">{t("parts.jobCard")}</label>
-                    <Select value={createForm.jobCardId} onValueChange={(v) => setCreateForm({ ...createForm, jobCardId: v })}>
+                    <Select value={createForm.jobCardId} onValueChange={(v) => {
+                      const jc = jobCards.find(c => c.id === v);
+                      const mechId = jc?.assigned_to || jc?.assigned_mechanic_id;
+                      setCreateForm(prev => ({ 
+                        ...prev, 
+                        jobCardId: v, 
+                        mechanicId: mechId || prev.mechanicId 
+                      }));
+                    }}>
                       <SelectTrigger><SelectValue placeholder={t("parts.selectJobCard")} /></SelectTrigger>
                       <SelectContent>
                         {jobCards.map((jc) => (
-                          <SelectItem key={jc.id} value={jc.id}>{jc.job_number} — {jc.vehicle_plate}</SelectItem>
+                          <SelectItem key={jc.id} value={jc.id}>
+                            {jc.job_number} — {jc.vehicle_plate || jc.vehicle?.plate_number || 'Vehicle'}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1050,7 +1101,9 @@ export default function PartsRequest() {
                       <SelectTrigger><SelectValue placeholder={t("parts.selectMechanic")} /></SelectTrigger>
                       <SelectContent>
                         {mechanics.map((m) => (
-                          <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                          <SelectItem key={m.user_id || m.id} value={m.user_id || m.id}>
+                            {m.full_name || m.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1078,17 +1131,43 @@ export default function PartsRequest() {
                   </Button>
                 </div>
 
+                {/* Inventory Autocomplete Datalists */}
+                <datalist id="inventory-part-names">
+                  {inventoryItems.map((it) => (
+                    <option key={it.id} value={it.part_name}>
+                      {it.sku ? `${it.sku} (Stock: ${it.stock_quantity ?? 0})` : `Stock: ${it.stock_quantity ?? 0}`}
+                    </option>
+                  ))}
+                </datalist>
+                <datalist id="inventory-skus">
+                  {inventoryItems.map((it) => (
+                    <option key={it.id} value={it.sku || it.part_name}>
+                      {it.part_name} (Stock: ${it.stock_quantity ?? 0})
+                    </option>
+                  ))}
+                </datalist>
+
                 <div className="space-y-3">
                   {partLines.map((line, idx) => (
                     <div key={idx} className="rounded-lg border bg-muted/30 p-3">
                       <div className="grid grid-cols-12 gap-3 items-end">
                         <div className="col-span-12 md:col-span-4">
                           <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase mb-1 block">{t("parts.partName")}</label>
-                          <Input value={line.part_name} onChange={(e) => updatePartLine(idx, "part_name", e.target.value)} placeholder={t("parts.partNamePlaceholder")} />
+                          <Input
+                            list="inventory-part-names"
+                            value={line.part_name}
+                            onChange={(e) => updatePartLine(idx, "part_name", e.target.value)}
+                            placeholder={t("parts.partNamePlaceholder")}
+                          />
                         </div>
                         <div className="col-span-6 md:col-span-3">
                           <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase mb-1 block">{t("parts.sku")}</label>
-                          <Input value={line.part_number} onChange={(e) => updatePartLine(idx, "part_number", e.target.value)} placeholder={t("parts.skuPlaceholder")} />
+                          <Input
+                            list="inventory-skus"
+                            value={line.part_number}
+                            onChange={(e) => updatePartLine(idx, "part_number", e.target.value)}
+                            placeholder={t("parts.skuPlaceholder")}
+                          />
                         </div>
                         <div className="col-span-3 md:col-span-2">
                           <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase mb-1 block">{t("parts.qty")}</label>

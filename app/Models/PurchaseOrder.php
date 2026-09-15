@@ -16,10 +16,30 @@ class PurchaseOrder extends Model
         'parts_request_id',
         'supplier_id',
         'requested_by',
+        'requested_by_name',
         'status',
-        'total_amount',
+        'currency',
+        'subtotal',
+        'tax',
+        'total',
+        'notes',
+        'manager_approved_by',
+        'manager_approved_at',
         'manager_notes',
+        'finance_approved_by',
+        'finance_approved_at',
         'finance_notes',
+        'rejected_reason',
+        // Legacy alias:
+        'total_amount',
+    ];
+
+    protected $casts = [
+        'subtotal' => 'decimal:2',
+        'tax' => 'decimal:2',
+        'total' => 'decimal:2',
+        'manager_approved_at' => 'datetime',
+        'finance_approved_at' => 'datetime',
     ];
 
     public function items()
@@ -37,8 +57,25 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    // Alias for frontend plural
+    public function suppliers()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
     public function requestedByUser()
     {
         return $this->belongsTo(User::class, 'requested_by');
     }
+
+    public function setTotalAmountAttribute($value)
+    {
+        $this->attributes['total'] = $value;
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->attributes['total'] ?? 0;
+    }
 }
+

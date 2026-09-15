@@ -28,13 +28,21 @@ interface PO {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-foreground",
+  Draft: "bg-muted text-foreground",
   pending_manager: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
+  "Pending Manager Approval": "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
   pending_finance: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  "Pending Finance Approval": "bg-blue-500/15 text-blue-700 dark:text-blue-400",
   approved: "bg-green-500/15 text-green-700 dark:text-green-400",
+  Approved: "bg-green-500/15 text-green-700 dark:text-green-400",
   rejected: "bg-destructive/15 text-destructive",
+  Rejected: "bg-destructive/15 text-destructive",
   ordered: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
+  Ordered: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
   received: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  Received: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   cancelled: "bg-muted text-muted-foreground",
+  Cancelled: "bg-muted text-muted-foreground",
 };
 
 export default function PurchaseOrders() {
@@ -416,7 +424,7 @@ function PODetailDialog({ open, onOpenChange, poId, onChanged, canApproveManager
 
           {/* Actions */}
           <div className="no-print border-t pt-3 space-y-2">
-            {po.status === "pending_manager" && canApproveManager && (
+            {(po.status === "pending_manager" || po.status === "Pending Manager Approval") && canApproveManager && (
               <>
                 <Textarea placeholder="Manager notes (optional)" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
                 <div className="flex gap-2 justify-end">
@@ -425,7 +433,7 @@ function PODetailDialog({ open, onOpenChange, poId, onChanged, canApproveManager
                 </div>
               </>
             )}
-            {po.status === "pending_finance" && canApproveFinance && (
+            {(po.status === "pending_finance" || po.status === "Pending Finance Approval") && canApproveFinance && (
               <>
                 <Textarea placeholder="Finance notes (optional)" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
                 <div className="flex gap-2 justify-end">
@@ -434,10 +442,10 @@ function PODetailDialog({ open, onOpenChange, poId, onChanged, canApproveManager
                 </div>
               </>
             )}
-            {po.status === "approved" && canApproveManager && (
+            {(po.status === "approved" || po.status === "Approved") && canApproveManager && (
               <div className="flex justify-end"><Button onClick={() => act("mark_ordered")}>Mark as Ordered</Button></div>
             )}
-            {po.status === "ordered" && canApproveManager && (
+            {(po.status === "ordered" || po.status === "Ordered") && canApproveManager && (
               <div className="flex justify-end"><Button onClick={() => act("mark_received")}>Mark as Received</Button></div>
             )}
           </div>

@@ -12,42 +12,65 @@ class PurchaseOrderService
 {
     public function create(array $data, string $actorId)
     {
+        $actor = User::with('profile')->find($actorId);
+
         $data['po_number'] = $this->generatePoNumber();
-        $data['status'] = 'pending';
+        $data['status'] = $data['status'] ?? 'pending_manager';
         $data['requested_by'] = $actorId;
+        $data['requested_by_name'] = $actor?->profile?->full_name ?? $actor?->name;
+
+        $items = $data['items'] ?? [];
+        unset($data['items']);
 
         $po = PurchaseOrder::create($data);
 
-        if (!empty($data['items'])) {
-            $po->items()->createMany($data['items']);
+        if (!empty($items)) {
+            $formattedItems = array_map(function ($item) use ($po) {
+                return [
+                    'id' => (string) Str::uuid(),
+                    'purchase_order_id' => $po->id,
+                    'part_name' => $item['part_name'],
+                    'part_number' => $item['part_number'] ?? null,
+                    'quantity' => $item['quantity'] ?? 1,
+                    'unit_price' => $item['unit_price'] ?? 0,
+                    'total' => $item['total'] ?? 0,
+                    'notes' => $item['notes'] ?? null,
+                ];
+            }, $items);
+
+            $po->items()->createMany($formattedItems);
         }
 
         $this->logAudit($actorId, 'create', 'PurchaseOrder', $po->id, ['po_number' => $data['po_number']]);
-        return $po;
+        return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
-    public function approveManager(string $id, string $notes, string $actorId)
+    public function approveManager(string $id, ?string $notes, string $actorId)
     {
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
-            'status' => 'manager_approved',
+            'status' => 'pending_finance',
+            'manager_approved_by' => $actorId,
+            'manager_approved_at' => now(),
             'manager_notes' => $notes,
         ]);
 
         $this->logAudit($actorId, 'approve_manager', 'PurchaseOrder', $po->id, ['notes' => $notes]);
-        return $po;
+        return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
-    public function approveFinance(string $id, string $notes, string $actorId)
+    public function approveFinance(string $id, ?string $notes, string $actorId)
     {
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
-            'status' => 'finance_approved',
+            'status' => 'approved',
+            'finance_approved_by' => $actorId,
+            'finance_approved_at' => now(),
             'finance_notes' => $notes,
         ]);
 
         $this->logAudit($actorId, 'approve_finance', 'PurchaseOrder', $po->id, ['notes' => $notes]);
-        return $po;
+        return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
     public function reject(string $id, string $reason, string $actorId)
@@ -55,11 +78,11 @@ class PurchaseOrderService
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
             'status' => 'rejected',
-            'manager_notes' => $reason, // using manager_notes for simplicity as general rejection reason
+            'rejected_reason' => $reason,
         ]);
 
         $this->logAudit($actorId, 'reject', 'PurchaseOrder', $po->id, ['reason' => $reason]);
-        return $po;
+        return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
     protected function generatePoNumber(): string

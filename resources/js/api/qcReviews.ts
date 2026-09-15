@@ -33,7 +33,7 @@ export const createQcReview = async (review: Partial<QcReview>): Promise<QcRevie
 };
 
 export const updateChecklist = async (reviewId: string, items: QcChecklistItem[]): Promise<QcChecklistItem[]> => {
-    const { data } = await api.patch(`/qc-reviews/${reviewId}/checklist`, { items });
+    const { data } = await api.patch(`/qc-reviews/${reviewId}/checklist`, { items, checklist_items: items });
     return data;
 };
 

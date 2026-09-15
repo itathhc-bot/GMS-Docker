@@ -8,11 +8,19 @@ class FinalizeQcReviewRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Add policy checks here if needed
+        return true;
     }
 
     public function rules(): array
     {
-        return ['status' => 'required|string', 'signature' => 'required|string'];
+        return [
+            'status' => 'nullable|string',
+            'signature' => 'nullable|string',
+            'signature_data' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'reviewed_at' => 'nullable',
+        ];
     }
 }
+

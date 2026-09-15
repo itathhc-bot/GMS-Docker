@@ -14,9 +14,12 @@ class QcReviewPolicy
         return null;
     }
 
-    public function viewAny(User $user) { return $user->hasPermissionTo('qc.view'); }
-    public function view(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.view'); }
-    public function create(User $user) { return $user->hasPermissionTo('qc.create'); }
-    public function review(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.review'); }
-    public function sign(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.sign'); }
+    public function viewAny(User $user) { return $user->hasPermissionTo('qc.view') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function view(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.view') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function create(User $user) { return $user->hasPermissionTo('qc.create') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function update(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.review') || $user->hasPermissionTo('qc.create') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function review(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.review') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function sign(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.sign') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
+    public function finalize(User $user, QcReview $qc) { return $user->hasPermissionTo('qc.sign') || $user->hasPermissionTo('qc.review') || $user->hasRole(['admin', 'supervisor', 'qc_inspector']); }
 }
+
