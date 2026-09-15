@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\PartsRequest;
 use App\Models\InventoryItem;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PartsApprovalService
 {
@@ -54,15 +56,19 @@ class PartsApprovalService
 
     protected function logAudit(string $actorId, string $action, string $type, string $entityId, array $details)
     {
-        $actor = User::find($actorId);
-        AuditLog::create([
-            'log_type'      => 'approval',
-            'actor_user_id' => $actorId,
-            'actor_name'    => $actor?->name,
-            'action'        => $action,
-            'entity_type'   => $type,
-            'entity_id'     => $entityId,
-            'details'       => $details,
-        ]);
+        try {
+            $actor = User::find($actorId);
+            AuditLog::create([
+                'log_type'      => 'approval',
+                'actor_user_id' => $actorId,
+                'actor_name'    => $actor?->name,
+                'action'        => $action,
+                'entity_type'   => $type,
+                'entity_id'     => $entityId,
+                'details'       => $details,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("Failed to write audit log in PartsApprovalService: " . $e->getMessage());
+        }
     }
 }

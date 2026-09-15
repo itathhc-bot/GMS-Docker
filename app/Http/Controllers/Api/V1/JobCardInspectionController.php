@@ -25,26 +25,63 @@ class JobCardInspectionController extends Controller
         if ($request->has('inspections') && is_array($request->input('inspections'))) {
             $created = [];
             foreach ($request->input('inspections') as $item) {
-                $created[] = $jobCard->inspections()->create([
-                    'category' => $item['category'] ?? 'General',
-                    'item_name' => $item['item_name'] ?? 'Unknown',
-                    'status' => $item['status'] ?? 'na',
-                    'notes' => $item['notes'] ?? null,
-                ]);
+                $itemKey = $item['item_key'] ?? $item['item_name'] ?? $item['point_name'] ?? 'general';
+                $itemLabel = $item['item_label'] ?? ucwords(str_replace(['_', '-'], ' ', (string)$itemKey));
+                $rawStatus = strtolower($item['status'] ?? $item['result'] ?? 'na');
+                $result = match($rawStatus) {
+                    'pass' => 'Pass',
+                    'fail' => 'Fail',
+                    default => 'N/A',
+                };
+
+                $created[] = $jobCard->inspections()->updateOrCreate(
+                    [
+                        'job_card_id' => $jobCard->id,
+                        'item_key'    => $itemKey,
+                    ],
+                    [
+                        'item_label'  => $itemLabel,
+                        'category'    => $item['category'] ?? 'General',
+                        'result'      => $result,
+                        'notes'       => $item['notes'] ?? null,
+                    ]
+                );
             }
             return response()->json($created, 201);
         }
 
         $data = $request->validate([
-            'category' => 'required|string|max:255',
-            'item_name' => 'required|string|max:255',
-            'status' => 'required|string|in:pass,fail,warning,na',
-            'notes' => 'nullable|string',
-            'images' => 'nullable|array',
+            'item_key'   => 'nullable|string|max:255',
+            'item_name'  => 'nullable|string|max:255',
+            'item_label' => 'nullable|string|max:255',
+            'category'   => 'nullable|string|max:255',
+            'result'     => 'nullable|string',
+            'status'     => 'nullable|string',
+            'notes'      => 'nullable|string',
         ]);
 
+        $itemKey = $data['item_key'] ?? $data['item_name'] ?? 'general';
+        $itemLabel = $data['item_label'] ?? ucwords(str_replace(['_', '-'], ' ', (string)$itemKey));
+        $rawStatus = strtolower($data['status'] ?? $data['result'] ?? 'na');
+        $result = match($rawStatus) {
+            'pass' => 'Pass',
+            'fail' => 'Fail',
+            default => 'N/A',
+        };
+
         try {
-            $inspection = $jobCard->inspections()->create($data);
+            $inspection = $jobCard->inspections()->updateOrCreate(
+                [
+                    'job_card_id' => $jobCard->id,
+                    'item_key'    => $itemKey,
+                ],
+                [
+                    'item_label'  => $itemLabel,
+                    'category'    => $data['category'] ?? 'General',
+                    'result'      => $result,
+                    'notes'       => $data['notes'] ?? null,
+                ]
+            );
             return response()->json($inspection, 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create inspection item: ' . $e->getMessage()], 500);

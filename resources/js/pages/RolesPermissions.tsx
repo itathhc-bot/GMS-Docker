@@ -88,7 +88,17 @@ export default function RolesPermissions() {
       // Also fetch the canonical permissions list
       try {
         const { data: permsData } = await api.get('/permissions');
-        const canonical: PermissionRow[] = Array.isArray(permsData?.data) ? permsData.data : permsData ?? [];
+        const rawPerms = Array.isArray(permsData?.data) ? permsData.data : (Array.isArray(permsData) ? permsData : []);
+        const canonical: PermissionRow[] = rawPerms.map((p: any) => {
+          const key = typeof p === 'string' ? p : (p.name ?? p.key ?? '');
+          const [category] = key.split('.');
+          return {
+            key,
+            label: p.label ?? key,
+            category: p.category ?? category ?? 'general',
+            description: p.description ?? null,
+          };
+        });
         if (canonical.length > 0) {
           setPermissions(canonical);
         } else {

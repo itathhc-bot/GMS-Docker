@@ -26,6 +26,8 @@ class JobCard extends Model
         'mechanic_signature',
         'supervisor_signature',
         'completed_at',
+        'reported_issue',
+        'assigned_mechanic_id',
     ];
 
     protected $casts = [
@@ -33,9 +35,34 @@ class JobCard extends Model
         'completed_at' => 'datetime',
     ];
 
+    public function setReportedIssueAttribute($value): void
+    {
+        $this->attributes['description'] = $value;
+    }
+
+    public function getReportedIssueAttribute(): ?string
+    {
+        return $this->attributes['description'] ?? null;
+    }
+
+    public function setAssignedMechanicIdAttribute($value): void
+    {
+        $this->attributes['assigned_to'] = !empty($value) ? $value : null;
+    }
+
+    public function getAssignedMechanicIdAttribute(): ?string
+    {
+        return $this->attributes['assigned_to'] ?? null;
+    }
+
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function vehicles()
+    {
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
     public function assignedUser()

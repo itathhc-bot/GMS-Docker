@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\PurchaseOrder;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseOrderService
 {
@@ -70,15 +72,19 @@ class PurchaseOrderService
 
     protected function logAudit(string $actorId, string $action, string $type, string $entityId, array $details)
     {
-        $actor = User::find($actorId);
-        AuditLog::create([
-            'log_type'      => 'approval',
-            'actor_user_id' => $actorId,
-            'actor_name'    => $actor?->name,
-            'action'        => $action,
-            'entity_type'   => $type,
-            'entity_id'     => $entityId,
-            'details'       => $details,
-        ]);
+        try {
+            $actor = User::find($actorId);
+            AuditLog::create([
+                'log_type'      => 'approval',
+                'actor_user_id' => $actorId,
+                'actor_name'    => $actor?->name,
+                'action'        => $action,
+                'entity_type'   => $type,
+                'entity_id'     => $entityId,
+                'details'       => $details,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("Failed to write audit log in PurchaseOrderService: " . $e->getMessage());
+        }
     }
 }

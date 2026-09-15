@@ -17,7 +17,14 @@ class StoreJobCardRequest extends FormRequest
             $this->merge(['description' => $this->input('reported_issue')]);
         }
         if ($this->has('assigned_mechanic_id')) {
-            $this->merge(['assigned_to' => $this->input('assigned_mechanic_id')]);
+            $val = $this->input('assigned_mechanic_id');
+            $this->merge(['assigned_to' => (!empty($val) ? $val : null)]);
+        }
+        if ($this->has('assigned_to') && empty($this->input('assigned_to'))) {
+            $this->merge(['assigned_to' => null]);
+        }
+        if ($this->has('bay_number') && empty($this->input('bay_number'))) {
+            $this->merge(['bay_number' => null]);
         }
     }
 

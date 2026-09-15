@@ -136,10 +136,11 @@ export default function JobCardWizard({ open, onOpenChange, onCreated, prefillPl
 
   const loadMechanics = async () => {
     try {
-      const users = await getUsers({ role: "mechanic", is_active: true });
-      setMechanics(users.map((u: any) => ({
+      const users: any = await getUsers({ role: "mechanic", is_active: true });
+      const rawUsers = Array.isArray(users?.data) ? users.data : (Array.isArray(users) ? users : []);
+      setMechanics(rawUsers.map((u: any) => ({
         user_id: u.id,
-        full_name: `${u.profile?.first_name || ""} ${u.profile?.last_name || ""}`.trim() || u.email
+        full_name: u.full_name || u.name || u.profile?.full_name || `${u.profile?.first_name || ""} ${u.profile?.last_name || ""}`.trim() || u.email
       })));
     } catch (e) {
       setMechanics([]);
@@ -194,7 +195,10 @@ export default function JobCardWizard({ open, onOpenChange, onCreated, prefillPl
         status: "open",
       } as any);
 
-      const jobCardId = jcData.id;
+      const jobCardId = jcData?.id ?? jcData?.data?.id;
+      if (!jobCardId) {
+        throw new Error("Job card was created but no ID was returned.");
+      }
 
       // 2) Persist every inspected item into job_card_inspections
       const inspectionRows = INSPECTION_ITEMS

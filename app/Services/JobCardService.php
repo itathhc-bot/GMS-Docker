@@ -4,14 +4,28 @@ namespace App\Services;
 
 use App\Models\JobCard;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class JobCardService
 {
     public function createJobCard(array $data, string $actorId)
     {
-        $data['job_number'] = $this->generateJobNumber();
-        $data['status'] = 'Open';
+        if (empty($data['job_number'])) {
+            $data['job_number'] = $this->generateJobNumber();
+        }
+
+        $rawStatus = strtolower($data['status'] ?? 'Open');
+        $statusMap = [
+            'open' => 'Open',
+            'in_progress' => 'In Progress',
+            'pending_parts' => 'Pending Parts',
+            'qc_review' => 'QC Review',
+            'completed' => 'Completed',
+            'delayed' => 'Delayed',
+        ];
+        $data['status'] = $statusMap[$rawStatus] ?? 'Open';
+
         if (isset($data['priority'])) {
             $data['priority'] = strtoupper($data['priority']);
         }
@@ -91,15 +105,19 @@ class JobCardService
 
     protected function logAudit(string $actorId, string $action, string $type, string $entityId, array $details)
     {
-        $actor = User::find($actorId);
-        AuditLog::create([
-            'log_type'      => 'admin',
-            'actor_user_id' => $actorId,
-            'actor_name'    => $actor?->name,
-            'action'        => $action,
-            'entity_type'   => $type,
-            'entity_id'     => $entityId,
-            'details'       => $details,
-        ]);
+        try {
+            $actor = User::find($actorId);
+            AuditLog::create([
+                'log_type'      => 'admin',
+                'actor_user_id' => $actorId,
+                'actor_name'    => $actor?->name,
+                'action'        => $action,
+                'entity_type'   => $type,
+                'entity_id'     => $entityId,
+                'details'       => $details,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Failed to write audit log in JobCardService: " . $e->getMessage());
+        }
     }
 }

@@ -20,7 +20,15 @@ class PartsRequestController extends Controller {
     }
     public function store(StorePartsRequestRequest $request) {
         $this->authorize('create', PartsRequest::class);
-        $model = $this->repository->create($request->validated());
+        $data = $request->validated();
+        if (empty($data['request_number'])) {
+            $prefix = config('garage.request_number_prefix', 'PR');
+            $data['request_number'] = $prefix . '-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+        }
+        if (empty($data['requested_by'])) {
+            $data['requested_by'] = $request->user()->id;
+        }
+        $model = $this->repository->create($data);
         return (new PartsRequestResource($model))->response()->setStatusCode(201);
     }
     public function update(UpdatePartsRequestRequest $request, PartsRequest $model) {

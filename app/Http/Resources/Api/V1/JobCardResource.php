@@ -9,6 +9,21 @@ class JobCardResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        $data = parent::toArray($request);
+        $vehicleData = $this->vehicle ? [
+            'id' => $this->vehicle->id,
+            'plate_number' => $this->vehicle->plate_number,
+            'make' => $this->vehicle->make,
+            'model' => $this->vehicle->model,
+            'year' => $this->vehicle->year,
+            'vin' => $this->vehicle->vin,
+            'status' => $this->vehicle->status,
+        ] : null;
+
+        $data['vehicle'] = $vehicleData;
+        $data['vehicles'] = $vehicleData;
+        $data['reported_issue'] = $this->description;
+        $data['assigned_mechanic_id'] = $this->assigned_to;
+        return $data;
     }
 }

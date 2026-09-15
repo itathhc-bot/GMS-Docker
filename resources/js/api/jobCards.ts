@@ -26,22 +26,22 @@ export interface JobCardInspection {
 
 export const getJobCards = async (params?: any): Promise<JobCard[]> => {
     const { data } = await api.get('/job-cards', { params });
-    return data;
+    return data?.data ?? data;
 };
 
 export const getJobCard = async (id: string): Promise<JobCard> => {
     const { data } = await api.get(`/job-cards/${id}`);
-    return data;
+    return data?.data ?? data;
 };
 
 export const createJobCard = async (jobCard: Partial<JobCard>): Promise<JobCard> => {
     const { data } = await api.post('/job-cards', jobCard);
-    return data;
+    return data?.data ?? data;
 };
 
 export const updateJobCard = async (id: string, jobCard: Partial<JobCard>): Promise<JobCard> => {
     const { data } = await api.patch(`/job-cards/${id}`, jobCard);
-    return data;
+    return data?.data ?? data;
 };
 
 export const deleteJobCard = async (id: string): Promise<void> => {

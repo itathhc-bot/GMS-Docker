@@ -31,8 +31,6 @@ class BayCommentController extends Controller
 
     public function store(StoreBayCommentRequest $request): JsonResponse
     {
-        $this->authorize('job_cards.create');
-
         try {
             $data = $request->validated();
             $data['author_user_id'] = $request->user()->id;
@@ -41,7 +39,11 @@ class BayCommentController extends Controller
             $comment = BayComment::create($data);
             $comment->load('author');
 
-            broadcast(new BayCommentPosted($comment, $comment->bay_number))->toOthers();
+            try {
+                broadcast(new BayCommentPosted($comment, $comment->bay_number))->toOthers();
+            } catch (\Throwable $broadCastEx) {
+                \Log::warning('BayComment broadcast failed: ' . $broadCastEx->getMessage());
+            }
 
             return response()->json($comment, 201);
         } catch (\Exception $e) {

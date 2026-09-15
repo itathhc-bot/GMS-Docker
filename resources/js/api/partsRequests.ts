@@ -16,22 +16,22 @@ export interface PartsRequest {
 
 export const getPartsRequests = async (params?: any): Promise<PartsRequest[]> => {
     const { data } = await api.get('/parts-requests', { params });
-    return data;
+    return data?.data ?? data;
 };
 
 export const getPartsRequest = async (id: string): Promise<PartsRequest> => {
     const { data } = await api.get(`/parts-requests/${id}`);
-    return data;
+    return data?.data ?? data;
 };
 
 export const createPartsRequest = async (request: Partial<PartsRequest>): Promise<PartsRequest> => {
     const { data } = await api.post('/parts-requests', request);
-    return data;
+    return data?.data ?? data;
 };
 
 export const updatePartsRequest = async (id: string, request: Partial<PartsRequest>): Promise<PartsRequest> => {
     const { data } = await api.patch(`/parts-requests/${id}`, request);
-    return data;
+    return data?.data ?? data;
 };
 
 export const approve = async (id: string): Promise<PartsRequest> => {
