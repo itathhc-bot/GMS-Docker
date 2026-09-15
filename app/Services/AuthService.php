@@ -45,9 +45,9 @@ class AuthService
         ];
     }
 
-    public function logout(User $user)
+    public function logout(?User $user)
     {
-        $user->currentAccessToken()?->delete();
+        $user?->currentAccessToken()?->delete();
         \Illuminate\Support\Facades\Auth::guard('web')->logout();
         $request = request();
         if ($request && $request->hasSession()) {

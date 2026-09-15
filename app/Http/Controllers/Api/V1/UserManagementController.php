@@ -20,7 +20,7 @@ class UserManagementController extends Controller
         $this->authorize('viewAny', User::class);
 
         try {
-            $filters = $request->only(['role', 'search', 'is_deactivated']);
+            $filters = $request->only(['role', 'search', 'is_deactivated', 'per_page']);
             $users = $this->service->listUsers($filters);
             return response()->json($users);
         } catch (\Exception $e) {

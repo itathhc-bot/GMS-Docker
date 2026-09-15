@@ -23,6 +23,10 @@ class UserManagementService
             $query->where('is_active', $filters['is_active']);
         }
 
+        if (!empty($filters['role'])) {
+            $query->role($filters['role']);
+        }
+
         return $query->paginate($filters['per_page'] ?? 15);
     }
 

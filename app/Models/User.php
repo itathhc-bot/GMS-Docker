@@ -32,6 +32,33 @@ class User extends Authenticatable
         'is_active' => 'boolean',
     ];
 
+    protected $appends = [
+        'full_name',
+        'employee_id',
+        'department',
+        'is_deactivated',
+    ];
+
+    public function getFullNameAttribute(): ?string
+    {
+        return $this->profile?->full_name ?? $this->name;
+    }
+
+    public function getEmployeeIdAttribute(): ?string
+    {
+        return $this->profile?->employee_id;
+    }
+
+    public function getDepartmentAttribute(): ?string
+    {
+        return $this->profile?->department;
+    }
+
+    public function getIsDeactivatedAttribute(): bool
+    {
+        return $this->profile?->is_deactivated ?? !$this->is_active;
+    }
+
     public function profile()
     {
         return $this->hasOne(Profile::class);

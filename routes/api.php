@@ -164,10 +164,12 @@ Route::prefix('v1')->group(function () {
 
         // Users & Roles
         Route::prefix('users')->name('api.v1.users.')->group(function () {
-            Route::get('/', [UserManagementController::class, 'index'])->name('index');
-            Route::post('/', [UserManagementController::class, 'store'])->name('store');
+            Route::get('', [UserManagementController::class, 'index'])->name('index');
+            Route::get('/', [UserManagementController::class, 'index']);
+            Route::post('', [UserManagementController::class, 'store'])->name('store');
+            Route::post('/', [UserManagementController::class, 'store']);
             Route::get('/{user}', [UserManagementController::class, 'show'])->name('show');
-            Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
+            Route::match(['put', 'patch'], '/{user}', [UserManagementController::class, 'update'])->name('update');
             Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
             Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
             Route::post('/{user}/roles', [UserManagementController::class, 'assignRole'])->name('roles.assign');
