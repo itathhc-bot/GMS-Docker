@@ -18,7 +18,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { profile, roles, signOut, hasRole } = useAuth();
+  const { profile, roles, signOut, hasRole, user } = useAuth();
   const { can } = usePermissions();
   const isAdmin = hasRole("admin");
 
@@ -48,13 +48,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     toast.success("Signed out successfully");
   };
 
-  const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "??";
+  const displayName = profile?.full_name || user?.name || user?.email || "";
+  const initials = displayName
+    ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "SA";
 
   const roleLabel = roles.length > 0
     ? roles.map((r) => r.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())).join(", ")
-    : "Staff";
+    : "Admin";
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -100,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{profile?.full_name || t("common.loading")}</p>
+              <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{displayName || t("common.loading")}</p>
               <p className="text-[10px] text-sidebar-muted">{roleLabel}</p>
             </div>
             <button onClick={handleSignOut} className="text-sidebar-muted hover:text-sidebar-foreground transition-colors" title={t("common.signOut")}>
