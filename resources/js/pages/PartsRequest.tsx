@@ -350,29 +350,33 @@ export default function PartsRequest() {
     }
   }, [locationFilter, locationFilterStorageKey]);
   
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        "partsRequest.exportColumns",
-        JSON.stringify(exportColumns)
-      );
-    } catch {
-    }
-    if (user) {
-      void updatePartsExportColumns(exportColumns as unknown as Record<string, boolean>);
-    }
-  }, [exportColumns, user, updatePartsExportColumns]);
-
   const hydratedFromProfileRef = useRef(false);
+  const lastSavedColsRef = useRef<string>("");
+
   useEffect(() => {
     if (hydratedFromProfileRef.current) return;
     const cols = profile?.parts_export_columns;
     if (cols && typeof cols === "object") {
       hydratedFromProfileRef.current = true;
+      lastSavedColsRef.current = JSON.stringify(cols);
       setExportColumns((prev) => ({ ...prev, ...(cols as Partial<ExportColumns>) }));
     }
   }, [profile?.parts_export_columns]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const serialized = JSON.stringify(exportColumns);
+    try {
+      window.localStorage.setItem("partsRequest.exportColumns", serialized);
+    } catch {
+    }
+    if (user && lastSavedColsRef.current && lastSavedColsRef.current !== serialized) {
+      lastSavedColsRef.current = serialized;
+      void updatePartsExportColumns(exportColumns as unknown as Record<string, boolean>);
+    } else if (!lastSavedColsRef.current) {
+      lastSavedColsRef.current = serialized;
+    }
+  }, [exportColumns]);
   
   useEffect(() => subscribeAudit(setAuditEntries), []);
 

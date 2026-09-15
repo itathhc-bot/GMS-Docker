@@ -146,16 +146,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const profile = user?.profile ?? null;
   const roles: AppRole[] = user?.roles ?? [];
 
+  const lastPatchedExportColsRef = useRef<string>("");
   const updatePartsExportColumns = useCallback(async (cols: Record<string, boolean>) => {
     if (!user) return;
+    const serialized = JSON.stringify(cols);
+    if (lastPatchedExportColsRef.current === serialized) return;
+    if (JSON.stringify(user.profile?.parts_export_columns) === serialized) {
+      lastPatchedExportColsRef.current = serialized;
+      return;
+    }
+    lastPatchedExportColsRef.current = serialized;
     try {
       await api.patch("/profile", { parts_export_columns: cols });
       setUser((u) => u ? { ...u, profile: u.profile ? { ...u.profile, parts_export_columns: cols } : null } : u);
     } catch { /* best-effort */ }
   }, [user]);
 
+  const lastPatchedLocationFilterRef = useRef<string | null>(null);
   const updatePartsHistoryLocationFilter = useCallback(async (value: string | null) => {
     if (!user) return;
+    if (lastPatchedLocationFilterRef.current === value) return;
+    if (user.profile?.parts_history_location_filter === value) {
+      lastPatchedLocationFilterRef.current = value;
+      return;
+    }
+    lastPatchedLocationFilterRef.current = value;
     try {
       await api.patch("/profile", { parts_history_location_filter: value });
       setUser((u) => u ? { ...u, profile: u.profile ? { ...u.profile, parts_history_location_filter: value } : null } : u);
