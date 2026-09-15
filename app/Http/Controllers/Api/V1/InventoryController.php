@@ -33,4 +33,9 @@ class InventoryController extends Controller {
         $this->repository->delete($model->id);
         return response()->json(null, 204);
     }
+    public function lowStock(Request $request) {
+        $this->authorize('viewAny', InventoryItem::class);
+        $items = InventoryItem::lowStock()->get();
+        return InventoryItemResource::collection($items);
+    }
 }
