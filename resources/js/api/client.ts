@@ -75,9 +75,6 @@ api.interceptors.response.use(
                 // Token expired or invalid
                 setMemoryToken(null);
                 window.dispatchEvent(new Event('auth:unauthorized'));
-                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                }
             } else if (status === 419) {
                 // CSRF token mismatch, might need to refresh cookie and retry
             }

@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import AuditLogPanel from "@/components/users/AuditLogPanel";
+import api from "@/api/client";
 import * as usersApi from "@/api/users";
 import { getRoles } from "@/api/roles";
 
@@ -150,12 +151,12 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const [usersData, rolesData] = await Promise.all([
-        api.get("/users?per_page=500").then((r) => r.data),
-        api.get("/roles").then((r) => r.data),
+        usersApi.getUsers({ per_page: 500 }),
+        getRoles(),
       ]);
 
-      const userList = Array.isArray(usersData) ? usersData : (Array.isArray(usersData?.data) ? usersData.data : []);
-      const rolesArray = Array.isArray(rolesData) ? rolesData : (Array.isArray(rolesData?.data) ? rolesData.data : []);
+      const userList = Array.isArray(usersData) ? usersData : (Array.isArray((usersData as any)?.data) ? (usersData as any).data : []);
+      const rolesArray = Array.isArray(rolesData) ? rolesData : (Array.isArray((rolesData as any)?.data) ? (rolesData as any).data : []);
       const defsList: RoleDefinition[] = rolesArray.map((r: any) => ({
         id: r.id, name: r.name, label: r.label ?? r.name,
         is_system: r.is_system ?? false, system_role: r.system_role ?? null,
@@ -164,15 +165,16 @@ export default function UserManagement() {
 
       const combined: UserWithRoles[] = userList.map((u: any) => ({
         user_id: u.id,
-        full_name: u.name ?? u.full_name,
-        employee_id: u.employee_id ?? null,
-        department: u.department ?? null,
-        is_deactivated: u.is_deactivated ?? false,
+        full_name: u.full_name ?? u.name ?? u.profile?.full_name ?? "",
+        employee_id: u.employee_id ?? u.profile?.employee_id ?? null,
+        department: u.department ?? u.profile?.department ?? null,
+        is_deactivated: u.is_deactivated ?? u.profile?.is_deactivated ?? (u.is_active !== undefined ? !u.is_active : false),
         roles: (Array.isArray(u.roles) ? u.roles.map((r: any) => typeof r === 'object' ? r.name : r) : []) as AppRole[],
         custom_roles: (Array.isArray(u.custom_roles) ? u.custom_roles : []) as CustomRoleAssignment[],
       }));
       setUsers(combined);
-    } catch {
+    } catch (err) {
+      console.error("fetchUsers failed:", err);
       toast.error(t("users.messages.loadFailed"));
     } finally {
       setLoading(false);
