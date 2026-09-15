@@ -66,10 +66,11 @@ export default function Vehicles() {
   const [historyVehicle, setHistoryVehicle] = useState<Vehicle | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const queryClient = useQueryClient();
-  const { data: vehicles = [], isLoading: loading } = useQuery({ 
+  const { data: rawVehicles = [], isLoading: loading } = useQuery({ 
     queryKey: ['vehicles'], 
-    queryFn: () => getVehicles({ sort_by: 'created_at', sort_dir: 'desc' }) 
+    queryFn: () => getVehicles({ sort_by: 'created_at', sort_dir: 'desc', per_page: 500 }) 
   });
+  const vehicles: Vehicle[] = Array.isArray(rawVehicles) ? rawVehicles : ((rawVehicles as any)?.data ?? []);
   const { data: drivers = [] } = useQuery({ 
     queryKey: ['drivers', { is_active: true }], 
     queryFn: () => getDrivers({ is_active: true, sort_by: 'full_name' }) 
@@ -104,15 +105,15 @@ export default function Vehicles() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      plate_number: form.plate_number,
-      make: form.make || null,
-      model: form.model || null,
+      plate_number: form.plate_number.toUpperCase().trim(),
+      make: form.make?.trim() || null,
+      model: form.model?.trim() || null,
       year: form.year ? parseInt(form.year) : null,
-      department: form.department || null,
+      department: form.department?.trim() || null,
       status: form.status,
-      vin: form.vin || null,
-      asset_id: form.asset_id || null,
-      driver_id: form.driver_id || null,
+      vin: form.vin?.trim() || null,
+      asset_id: form.asset_id?.trim() || null,
+      driver_id: form.driver_id?.trim() || null,
     };
     try {
       if (editId) {

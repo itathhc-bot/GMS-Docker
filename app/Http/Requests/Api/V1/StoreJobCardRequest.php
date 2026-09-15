@@ -31,14 +31,18 @@ class StoreJobCardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_id' => 'required|uuid',
-            'description' => 'required|string',
-            'assigned_to' => 'nullable|uuid',
-            'priority' => 'nullable|string',
-            'bay_number' => 'nullable|string',
-            'sla_hours' => 'nullable|numeric',
-            'status' => 'nullable|string',
-            'job_number' => 'nullable|string',
+            'vehicle_id'           => 'required|uuid',
+            'description'          => 'required|string',
+            'reported_issue'       => 'nullable|string',
+            'assigned_to'          => 'nullable|uuid',
+            'assigned_mechanic_id' => 'nullable|uuid',
+            'priority'             => 'nullable|string',
+            'bay_number'           => 'nullable|string',
+            'sla_hours'            => 'nullable|numeric',
+            'status'               => 'nullable|string',
+            'job_number'           => 'nullable|string',
+            'started_at'           => 'nullable|date',
+            'completed_at'         => 'nullable|date',
         ];
     }
 }

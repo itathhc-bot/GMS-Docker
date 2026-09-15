@@ -39,13 +39,22 @@ class JobCardService
     public function updateStatus(string $id, string $status, string $actorId)
     {
         $jobCard = JobCard::findOrFail($id);
-        $jobCard->update(['status' => $status]);
+        $updates = ['status' => $status];
 
-        if ($status === 'completed') {
-            $jobCard->update(['completed_at' => now()]);
+        $lower = strtolower(trim($status));
+        if ($lower === 'in progress' || $lower === 'in_progress') {
+            if (empty($jobCard->started_at)) {
+                $updates['started_at'] = now();
+            }
+        } elseif ($lower === 'completed' || $lower === 'closed') {
+            if (empty($jobCard->completed_at)) {
+                $updates['completed_at'] = now();
+            }
         }
 
-        $this->logAudit($actorId, 'update_status', 'JobCard', $jobCard->id, ['status' => $status]);
+        $jobCard->update($updates);
+
+        $this->logAudit($actorId, 'update_status', 'JobCard', $jobCard->id, ['status' => $jobCard->status]);
         return $jobCard;
     }
 
@@ -60,7 +69,15 @@ class JobCardService
     public function signMechanic(string $id, string $signatureData, string $userId)
     {
         $jobCard = JobCard::findOrFail($id);
-        $jobCard->update(['mechanic_signature' => $signatureData]);
+        $user = User::with('profile')->find($userId);
+        $name = $user?->profile?->full_name ?? $user?->name;
+
+        $jobCard->update([
+            'mechanic_signature'   => $signatureData,
+            'mechanic_signed_at'   => now(),
+            'mechanic_signed_by'   => $userId,
+            'mechanic_signed_name' => $name,
+        ]);
         $this->logAudit($userId, 'sign_mechanic', 'JobCard', $jobCard->id, []);
         return $jobCard;
     }
@@ -68,7 +85,15 @@ class JobCardService
     public function signSupervisor(string $id, string $signatureData, string $userId)
     {
         $jobCard = JobCard::findOrFail($id);
-        $jobCard->update(['supervisor_signature' => $signatureData]);
+        $user = User::with('profile')->find($userId);
+        $name = $user?->profile?->full_name ?? $user?->name;
+
+        $jobCard->update([
+            'supervisor_signature'   => $signatureData,
+            'supervisor_signed_at'   => now(),
+            'supervisor_signed_by'   => $userId,
+            'supervisor_signed_name' => $name,
+        ]);
         $this->logAudit($userId, 'sign_supervisor', 'JobCard', $jobCard->id, []);
         return $jobCard;
     }

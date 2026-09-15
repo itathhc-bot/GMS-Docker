@@ -20,43 +20,80 @@ class JobCardController extends Controller {
         $this->authorize('viewAny', JobCard::class);
         return JobCardResource::collection($this->repository->paginate($request->get('per_page', 15), $request->all()));
     }
-    public function show(JobCard $jobCard) {
+    public function show(Request $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('view', $jobCard);
-        return new JobCardResource($jobCard->load('vehicle', 'assignedUser', 'inspections'));
+        return new JobCardResource($jobCard->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
     public function store(StoreJobCardRequest $request) {
         $this->authorize('create', JobCard::class);
         $jobCard = $this->service->createJobCard($request->validated(), $request->user()->id);
-        return (new JobCardResource($jobCard))->response()->setStatusCode(201);
+        return (new JobCardResource($jobCard->load('vehicle', 'assignedUser.profile', 'inspections')))->response()->setStatusCode(201);
     }
     public function update(UpdateJobCardRequest $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('update', $jobCard);
-        $updated = $this->repository->update($jobCard->id, $request->validated());
-        return new JobCardResource($updated);
+        $data = $request->validated();
+        if (isset($data['status'])) {
+            $lower = strtolower(trim($data['status']));
+            if (($lower === 'in progress' || $lower === 'in_progress') && empty($jobCard->started_at) && empty($data['started_at'])) {
+                $data['started_at'] = now();
+            } elseif (($lower === 'completed' || $lower === 'closed') && empty($jobCard->completed_at) && empty($data['completed_at'])) {
+                $data['completed_at'] = now();
+            }
+        }
+        $jobCard->update($data);
+        return new JobCardResource($jobCard->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
-    public function destroy(JobCard $jobCard) {
+    public function destroy(Request $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('delete', $jobCard);
-        $this->repository->delete($jobCard->id);
+        $jobCard->delete();
         return response()->json(null, 204);
     }
     public function assign(AssignJobCardRequest $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('assign', $jobCard);
         $updated = $this->service->assign($jobCard->id, $request->validated('assigned_to'), $request->user()->id);
-        return new JobCardResource($updated);
+        return new JobCardResource($updated->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
     public function updateStatus(Request $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('update', $jobCard);
         $updated = $this->service->updateStatus($jobCard->id, $request->get('status'), $request->user()->id);
-        return new JobCardResource($updated);
+        return new JobCardResource($updated->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
     public function signMechanic(SignJobCardRequest $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('signMechanic', $jobCard);
         $updated = $this->service->signMechanic($jobCard->id, $request->validated('signature'), $request->user()->id);
-        return new JobCardResource($updated);
+        return new JobCardResource($updated->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
     public function signSupervisor(SignJobCardRequest $request, JobCard $jobCard) {
+        if (!$jobCard->exists) {
+            $id = $request->route('job_card') ?? $request->route('jobCard');
+            $jobCard = JobCard::findOrFail($id);
+        }
         $this->authorize('signSupervisor', $jobCard);
         $updated = $this->service->signSupervisor($jobCard->id, $request->validated('signature'), $request->user()->id);
-        return new JobCardResource($updated);
+        return new JobCardResource($updated->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
 }

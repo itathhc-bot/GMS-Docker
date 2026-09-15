@@ -8,7 +8,14 @@ class SignJobCardRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Add policy checks here if needed
+        return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('signature_data') && !$this->has('signature')) {
+            $this->merge(['signature' => $this->input('signature_data')]);
+        }
     }
 
     public function rules(): array

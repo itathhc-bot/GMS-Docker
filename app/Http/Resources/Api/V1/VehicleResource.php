@@ -9,6 +9,14 @@ class VehicleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        $data = parent::toArray($request);
+        $data['driver_name'] = $this->driver?->full_name ?? '—';
+        $data['driver'] = $this->driver ? [
+            'id' => $this->driver->id,
+            'full_name' => $this->driver->full_name,
+            'phone' => $this->driver->phone,
+            'email' => $this->driver->email,
+        ] : null;
+        return $data;
     }
 }
