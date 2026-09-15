@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from "react";
 
-import api from "@/api/client";
+import api, { setMemoryToken } from "@/api/client";
 import i18n, { LANG_STORAGE_KEY, SUPPORTED_LANGUAGES } from "@/i18n";
 
 export type AppRole = "admin" | "mechanic" | "supervisor" | "store_clerk" | "qc_inspector";
@@ -109,6 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First get CSRF cookie (Sanctum SPA auth)
       await api.get("/sanctum/csrf-cookie", { baseURL: window.location.origin });
       const res = await api.post<{ data: { token?: string; user: AuthUser } }>("/auth/login", { email, password });
+      const token = (res.data as any).token ?? (res.data as any).data?.token;
+      if (token) {
+        setMemoryToken(token);
+      }
       const authUser = (res.data as any).user ?? (res.data as any).data?.user ?? res.data as unknown as AuthUser;
       setUser(authUser);
       if (authUser.profile) applyLanguage(authUser.profile.preferred_language);
@@ -123,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post("/auth/logout");
     } finally {
+      setMemoryToken(null);
       setUser(null);
     }
   };

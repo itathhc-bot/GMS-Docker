@@ -1,13 +1,23 @@
 import axios from 'axios';
 
-// Memory store for the bearer token
+// Memory store for the bearer token with localStorage persistence
 let memoryToken: string | null = null;
 
 export const setMemoryToken = (token: string | null) => {
     memoryToken = token;
+    if (typeof window !== 'undefined') {
+        if (token) {
+            localStorage.setItem('auth_token', token);
+        } else {
+            localStorage.removeItem('auth_token');
+        }
+    }
 };
 
 export const getMemoryToken = () => {
+    if (!memoryToken && typeof window !== 'undefined') {
+        memoryToken = localStorage.getItem('auth_token');
+    }
     return memoryToken;
 };
 
@@ -64,8 +74,10 @@ api.interceptors.response.use(
             if (status === 401) {
                 // Token expired or invalid
                 setMemoryToken(null);
-                // Optionally redirect to login or dispatch an event
                 window.dispatchEvent(new Event('auth:unauthorized'));
+                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
             } else if (status === 419) {
                 // CSRF token mismatch, might need to refresh cookie and retry
             }

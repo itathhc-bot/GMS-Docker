@@ -34,9 +34,9 @@ import POApprovalPage from "@/pages/approvals/POApprovalPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   
-  if (isLoading) {
+  if (loading) {
     return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>;
   }
   
