@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from "react";
 
-import api, { setMemoryToken } from "@/api/client";
+import api, { setMemoryToken, getMemoryToken } from "@/api/client";
 import i18n, { LANG_STORAGE_KEY, SUPPORTED_LANGUAGES } from "@/i18n";
 
 export type AppRole = "admin" | "mechanic" | "supervisor" | "store_clerk" | "qc_inspector";
@@ -54,6 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastPatchedLangRef = useRef<string | null>(null);
 
   const fetchMe = async (): Promise<AuthUser | null> => {
+    const token = getMemoryToken();
+    if (!token) {
+      return null;
+    }
     try {
       const res = await api.get<{ data: AuthUser }>("/auth/me");
       return res.data.data ?? res.data as unknown as AuthUser;
@@ -72,8 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // On mount, check if we have a valid session via cookie (Sanctum SPA)
     refreshUser().finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setMemoryToken(null);
+      setUser(null);
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   // Persist language preference to profile on language change

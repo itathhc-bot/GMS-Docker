@@ -1,23 +1,31 @@
 import axios from 'axios';
 
-// Memory store for the bearer token with localStorage persistence
+// In-memory store for the bearer token (strictly in-memory; no localStorage persistence)
 let memoryToken: string | null = null;
+
+// Wipe any previously saved tokens in browser storage to immediately clear persistent sessions
+if (typeof window !== 'undefined') {
+    try {
+        localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_token');
+    } catch {
+        /* ignore */
+    }
+}
 
 export const setMemoryToken = (token: string | null) => {
     memoryToken = token;
     if (typeof window !== 'undefined') {
-        if (token) {
-            localStorage.setItem('auth_token', token);
-        } else {
+        try {
             localStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_token');
+        } catch {
+            /* ignore */
         }
     }
 };
 
 export const getMemoryToken = () => {
-    if (!memoryToken && typeof window !== 'undefined') {
-        memoryToken = localStorage.getItem('auth_token');
-    }
     return memoryToken;
 };
 
