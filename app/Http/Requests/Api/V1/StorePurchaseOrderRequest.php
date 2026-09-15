@@ -16,6 +16,7 @@ class StorePurchaseOrderRequest extends FormRequest
         return [
             'supplier_id' => 'required|uuid|exists:suppliers,id',
             'parts_request_id' => 'nullable|uuid|exists:parts_requests,id',
+            'status' => 'nullable|string',
             'currency' => 'nullable|string|max:10',
             'subtotal' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',

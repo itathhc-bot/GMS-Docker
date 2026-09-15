@@ -77,5 +77,25 @@ class PurchaseOrder extends Model
     {
         return $this->attributes['total'] ?? 0;
     }
+
+    public function setStatusAttribute($value): void
+    {
+        $map = [
+            'draft' => 'Draft',
+            'pending_manager' => 'Pending Manager Approval',
+            'pending manager' => 'Pending Manager Approval',
+            'pending manager approval' => 'Pending Manager Approval',
+            'pending_finance' => 'Pending Finance Approval',
+            'pending finance' => 'Pending Finance Approval',
+            'pending finance approval' => 'Pending Finance Approval',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            'cancelled' => 'Cancelled',
+            'ordered' => 'Approved',
+            'received' => 'Approved',
+        ];
+        $lower = strtolower(trim((string)$value));
+        $this->attributes['status'] = $map[$lower] ?? ($value ?: 'Draft');
+    }
 }
 

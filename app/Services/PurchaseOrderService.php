@@ -15,7 +15,7 @@ class PurchaseOrderService
         $actor = User::with('profile')->find($actorId);
 
         $data['po_number'] = $this->generatePoNumber();
-        $data['status'] = $data['status'] ?? 'pending_manager';
+        $data['status'] = $data['status'] ?? 'Pending Manager Approval';
         $data['requested_by'] = $actorId;
         $data['requested_by_name'] = $actor?->profile?->full_name ?? $actor?->name;
 
@@ -49,7 +49,7 @@ class PurchaseOrderService
     {
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
-            'status' => 'pending_finance',
+            'status' => 'Pending Finance Approval',
             'manager_approved_by' => $actorId,
             'manager_approved_at' => now(),
             'manager_notes' => $notes,
@@ -63,7 +63,7 @@ class PurchaseOrderService
     {
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
-            'status' => 'approved',
+            'status' => 'Approved',
             'finance_approved_by' => $actorId,
             'finance_approved_at' => now(),
             'finance_notes' => $notes,
@@ -77,7 +77,7 @@ class PurchaseOrderService
     {
         $po = PurchaseOrder::findOrFail($id);
         $po->update([
-            'status' => 'rejected',
+            'status' => 'Rejected',
             'rejected_reason' => $reason,
         ]);
 
