@@ -40,20 +40,22 @@ export default function Dashboard() {
     queryFn: () => getJobCards({ per_page: 10, sort: "-created_at" }),
   });
 
-  const jobs: any[] = jobsData?.data ?? [];
+  const rawJobs = (jobsData as any)?.data ?? jobsData;
+  const jobs: any[] = Array.isArray(rawJobs) ? rawJobs : [];
   const stats = {
-    activeJobs:    dashData?.active_jobs     ?? 0,
-    slaBreaches:   dashData?.sla_breaches    ?? 0,
-    pendingParts:  dashData?.pending_parts   ?? 0,
-    vehicleCount:  dashData?.vehicle_count   ?? 0,
+    activeJobs:    dashData?.activeJobs    ?? dashData?.active_jobs     ?? 0,
+    slaBreaches:   dashData?.slaBreaches   ?? dashData?.sla_breaches    ?? 0,
+    pendingParts:  dashData?.pendingParts  ?? dashData?.pending_parts   ?? 0,
+    vehicleCount:  dashData?.vehicleCount  ?? dashData?.vehicle_count   ?? 0,
   };
 
   const colors = ["hsl(220,70%,50%)","hsl(38,92%,50%)","hsl(0,72%,51%)","hsl(142,72%,40%)","hsl(280,60%,50%)"];
-  const workload: { name: string; value: number; color: string }[] = dashData?.workload
-    ? Object.entries(dashData.workload as Record<string,number>).map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }))
+  const rawWorkload = dashData?.workload ?? dashData?.workloadByStatus ?? dashData?.workload_by_status;
+  const workload: { name: string; value: number; color: string }[] = rawWorkload
+    ? Object.entries(rawWorkload as Record<string,number>).map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }))
     : [];
 
-  const repairTrends: { month: string; jobs: number }[] = dashData?.repair_trends ?? [];
+  const repairTrends: { month: string; jobs: number }[] = dashData?.repairTrends ?? dashData?.repair_trends ?? [];
   const recentJobs: any[] = jobs.slice(0, 8);
 
 
@@ -156,8 +158,8 @@ export default function Dashboard() {
                 <TableRow key={job.id}>
                   <TableCell className="font-semibold text-sm">{job.job_number}</TableCell>
                   <TableCell>
-                    <div className="font-semibold text-sm">{(job.vehicles as any)?.plate_number ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">{[(job.vehicles as any)?.make, (job.vehicles as any)?.model].filter(Boolean).join(" ") || "—"}</div>
+                    <div className="font-semibold text-sm">{(job.vehicle ?? job.vehicles)?.plate_number ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground">{[(job.vehicle ?? job.vehicles)?.make, (job.vehicle ?? job.vehicles)?.model].filter(Boolean).join(" ") || "—"}</div>
                   </TableCell>
                   <TableCell><StatusBadge status={job.status} /></TableCell>
                   <TableCell><PriorityBadge priority={job.priority} /></TableCell>
