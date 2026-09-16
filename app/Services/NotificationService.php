@@ -29,24 +29,33 @@ class NotificationService
 
     public function notifyJobAssigned(JobCard $jobCard): void
     {
-        if ($jobCard->assignedMechanic) {
-            $jobCard->assignedMechanic->notify(new JobCardAssignedNotification($jobCard));
+        $mechanic = $jobCard->assignedMechanic ?? $jobCard->assignedUser;
+        if ($mechanic) {
+            $mechanic->notify(new JobCardAssignedNotification($jobCard));
         }
     }
 
     public function notifyPOApprovedManager(PurchaseOrder $po): void
     {
-        $managers = User::role('manager')->get();
-        foreach ($managers as $manager) {
-            $manager->notify(new PurchaseOrderApprovedNotification($po, 'manager'));
+        $users = User::permission('po.approve_finance')->get();
+        if ($users->isEmpty()) {
+            $users = User::role('admin')->get();
+        }
+        foreach ($users as $user) {
+            $user->notify(new PurchaseOrderApprovedNotification($po, 'manager'));
         }
     }
 
     public function notifyPOApprovedFinance(PurchaseOrder $po): void
     {
-        $financeUsers = User::role('finance')->get();
-        foreach ($financeUsers as $user) {
-            $user->notify(new PurchaseOrderApprovedNotification($po, 'finance'));
+        if ($po->requestedByUser) {
+            $po->requestedByUser->notify(new PurchaseOrderApprovedNotification($po, 'finance'));
+        }
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            if (!$po->requested_by || $admin->id !== $po->requested_by) {
+                $admin->notify(new PurchaseOrderApprovedNotification($po, 'finance'));
+            }
         }
     }
 }

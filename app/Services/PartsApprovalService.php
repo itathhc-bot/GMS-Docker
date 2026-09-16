@@ -25,6 +25,7 @@ class PartsApprovalService
         $request->update($updateData);
 
         $this->logAudit($actorId, 'approve', 'PartsRequest', $request->id, ['supervisor_remarks' => $remarks]);
+        event(new \App\Events\PartsRequestStatusChanged($request));
         return $request;
     }
 
@@ -37,6 +38,7 @@ class PartsApprovalService
         ]);
 
         $this->logAudit($actorId, 'reject', 'PartsRequest', $request->id, ['reason' => $reason]);
+        event(new \App\Events\PartsRequestStatusChanged($request));
         return $request;
     }
 

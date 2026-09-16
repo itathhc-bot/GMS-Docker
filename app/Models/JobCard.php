@@ -134,6 +134,11 @@ class JobCard extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignedMechanic()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
     public function inspections()
     {
         return $this->hasMany(JobCardInspection::class);

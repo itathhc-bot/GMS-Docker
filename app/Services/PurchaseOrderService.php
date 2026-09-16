@@ -56,6 +56,11 @@ class PurchaseOrderService
         ]);
 
         $this->logAudit($actorId, 'approve_manager', 'PurchaseOrder', $po->id, ['notes' => $notes]);
+        try {
+            app(NotificationService::class)->notifyPOApprovedManager($po);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending PO manager approval notification: ' . $e->getMessage());
+        }
         return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
@@ -70,6 +75,11 @@ class PurchaseOrderService
         ]);
 
         $this->logAudit($actorId, 'approve_finance', 'PurchaseOrder', $po->id, ['notes' => $notes]);
+        try {
+            app(NotificationService::class)->notifyPOApprovedFinance($po);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending PO finance approval notification: ' . $e->getMessage());
+        }
         return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 

@@ -12,9 +12,10 @@ class SendPartsStatusNotification implements ShouldQueue
 
     public function handle(PartsRequestStatusChanged $event): void
     {
-        if ($event->partsRequest->status === 'approved') {
+        $status = strtolower((string) $event->partsRequest->status);
+        if ($status === 'approved') {
             $this->notificationService->notifyPartsApproved($event->partsRequest);
-        } elseif ($event->partsRequest->status === 'rejected') {
+        } elseif ($status === 'rejected') {
             $this->notificationService->notifyPartsRejected($event->partsRequest);
         }
     }
