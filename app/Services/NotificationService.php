@@ -58,4 +58,30 @@ class NotificationService
             }
         }
     }
+
+    public function notifyPartsRequested(PartsRequest $request): void
+    {
+        $supervisors = User::permission('parts.approve')->get();
+        if ($supervisors->isEmpty()) {
+            $supervisors = User::role('admin')->get();
+        }
+        foreach ($supervisors as $supervisor) {
+            if (!$request->requested_by || $supervisor->id !== $request->requested_by) {
+                $supervisor->notify(new \App\Notifications\PartsRequestCreatedNotification($request));
+            }
+        }
+    }
+
+    public function notifyPOCreated(PurchaseOrder $po): void
+    {
+        $managers = User::permission('po.approve_manager')->get();
+        if ($managers->isEmpty()) {
+            $managers = User::role('admin')->get();
+        }
+        foreach ($managers as $manager) {
+            if (!$po->requested_by || $manager->id !== $po->requested_by) {
+                $manager->notify(new \App\Notifications\PurchaseOrderCreatedNotification($po));
+            }
+        }
+    }
 }

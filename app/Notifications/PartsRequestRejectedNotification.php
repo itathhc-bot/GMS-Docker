@@ -21,13 +21,14 @@ class PartsRequestRejectedNotification extends Notification implements ShouldQue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $reason = $this->partsRequest->rejection_note ?? $this->partsRequest->rejection_reason ?? 'Not specified';
         return (new MailMessage)
-                    ->subject('Parts Request Rejected')
+                    ->subject('Parts Request Rejected: ' . $this->partsRequest->request_number)
                     ->line('Your parts request has been rejected.')
                     ->line('Request Number: ' . $this->partsRequest->request_number)
                     ->line('Part Name: ' . $this->partsRequest->part_name)
-                    ->line('Reason: ' . ($this->partsRequest->rejection_reason ?? 'Not specified'))
-                    ->action('View Request', url('/parts-requests/' . $this->partsRequest->id));
+                    ->line('Reason: ' . $reason)
+                    ->action('View Request', url('/approvals/parts/' . $this->partsRequest->id));
     }
 
     public function toDatabase(object $notifiable): array

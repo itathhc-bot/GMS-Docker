@@ -46,6 +46,11 @@ class PartsRequestController extends Controller
             $data['requested_by'] = $request->user()->id;
         }
         $model = $this->repository->create($data);
+        try {
+            app(\App\Services\NotificationService::class)->notifyPartsRequested($model);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending parts requested notification: ' . $e->getMessage());
+        }
         return (new PartsRequestResource($model->load(['jobCard.vehicle', 'requestedBy.profile'])))
             ->response()
             ->setStatusCode(201);

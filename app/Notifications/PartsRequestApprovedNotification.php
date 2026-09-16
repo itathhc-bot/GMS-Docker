@@ -22,11 +22,12 @@ class PartsRequestApprovedNotification extends Notification implements ShouldQue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->subject('Parts Request Approved')
+                    ->subject('Parts Request Approved: ' . $this->partsRequest->request_number)
                     ->line('Your parts request has been approved.')
                     ->line('Request Number: ' . $this->partsRequest->request_number)
                     ->line('Part Name: ' . $this->partsRequest->part_name)
-                    ->action('View Request', url('/parts-requests/' . $this->partsRequest->id));
+                    ->line('Quantity: ' . $this->partsRequest->quantity)
+                    ->action('View Request', url('/approvals/parts/' . $this->partsRequest->id));
     }
 
     public function toDatabase(object $notifiable): array

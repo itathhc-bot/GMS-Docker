@@ -24,11 +24,21 @@ class PurchaseOrderApprovedNotification extends Notification implements ShouldQu
 
     public function toMail(object $notifiable): MailMessage
     {
+        if ($this->roleContext === 'manager') {
+            return (new MailMessage)
+                ->subject('Purchase Order Awaiting Finance Approval: ' . $this->po->po_number)
+                ->line('Purchase Order ' . $this->po->po_number . ' has been approved by Manager and is now awaiting Finance Approval.')
+                ->line('PO Number: ' . $this->po->po_number)
+                ->line('Total Amount: ' . number_format((float) $this->po->total, 2) . ' ' . ($this->po->currency ?? 'USD'))
+                ->action('Review & Approve (Finance)', url('/approvals/po/' . $this->po->id . '/finance'));
+        }
+
         return (new MailMessage)
-                    ->subject('Purchase Order Approved')
-                    ->line('A purchase order has been approved by ' . $this->roleContext . '.')
-                    ->line('PO Number: ' . $this->po->po_number)
-                    ->action('View Purchase Order', url('/purchase-orders/' . $this->po->id));
+            ->subject('Purchase Order Approved: ' . $this->po->po_number)
+            ->line('Purchase Order ' . $this->po->po_number . ' has received final Finance Approval.')
+            ->line('PO Number: ' . $this->po->po_number)
+            ->line('Total Amount: ' . number_format((float) $this->po->total, 2) . ' ' . ($this->po->currency ?? 'USD'))
+            ->action('View Purchase Orders', url('/purchase-orders'));
     }
 
     public function toDatabase(object $notifiable): array

@@ -42,6 +42,11 @@ class PurchaseOrderService
         }
 
         $this->logAudit($actorId, 'create', 'PurchaseOrder', $po->id, ['po_number' => $data['po_number']]);
+        try {
+            app(NotificationService::class)->notifyPOCreated($po);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending PO creation notification: ' . $e->getMessage());
+        }
         return $po->fresh(['supplier', 'items', 'requestedByUser']);
     }
 
