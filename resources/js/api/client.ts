@@ -1,32 +1,52 @@
 import axios from 'axios';
 
-// In-memory store for the bearer token (strictly in-memory; no localStorage persistence)
+const TOKEN_KEY = 'auth_token';
+
+// In-memory cache of the token for immediate synchronous access
 let memoryToken: string | null = null;
 
-// Wipe any previously saved tokens in browser storage to immediately clear persistent sessions
+// Read initial token from sessionStorage (tab session) or localStorage (remembered session)
 if (typeof window !== 'undefined') {
     try {
-        localStorage.removeItem('auth_token');
-        sessionStorage.removeItem('auth_token');
+        memoryToken = window.sessionStorage.getItem(TOKEN_KEY) || window.localStorage.getItem(TOKEN_KEY) || null;
     } catch {
-        /* ignore */
+        memoryToken = null;
     }
 }
 
-export const setMemoryToken = (token: string | null) => {
+export const setMemoryToken = (token: string | null, persist: boolean = false) => {
     memoryToken = token;
     if (typeof window !== 'undefined') {
         try {
-            localStorage.removeItem('auth_token');
-            sessionStorage.removeItem('auth_token');
+            if (token) {
+                if (persist) {
+                    window.localStorage.setItem(TOKEN_KEY, token);
+                    window.sessionStorage.removeItem(TOKEN_KEY);
+                } else {
+                    window.sessionStorage.setItem(TOKEN_KEY, token);
+                    window.localStorage.removeItem(TOKEN_KEY);
+                }
+            } else {
+                window.sessionStorage.removeItem(TOKEN_KEY);
+                window.localStorage.removeItem(TOKEN_KEY);
+            }
         } catch {
             /* ignore */
         }
     }
 };
 
-export const getMemoryToken = () => {
-    return memoryToken;
+export const getMemoryToken = (): string | null => {
+    if (memoryToken) return memoryToken;
+    if (typeof window !== 'undefined') {
+        try {
+            memoryToken = window.sessionStorage.getItem(TOKEN_KEY) || window.localStorage.getItem(TOKEN_KEY) || null;
+            return memoryToken;
+        } catch {
+            return null;
+        }
+    }
+    return null;
 };
 
 const api = axios.create({
@@ -79,7 +99,8 @@ api.interceptors.response.use(
     async (error) => {
         if (error.response) {
             const status = error.response.status;
-            if (status === 401) {
+            const url = error.config?.url || '';
+            if (status === 401 && !url.includes('/auth/login')) {
                 // Token expired or invalid
                 setMemoryToken(null);
                 window.dispatchEvent(new Event('auth:unauthorized'));

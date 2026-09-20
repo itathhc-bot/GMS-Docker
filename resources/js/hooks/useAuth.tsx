@@ -30,7 +30,7 @@ interface AuthContextType {
   hasRole: (role: AppRole) => boolean;
   hasPermission: (permission: string) => boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updatePartsExportColumns: (cols: Record<string, boolean>) => Promise<void>;
   updatePartsHistoryLocationFilter: (value: string | null) => Promise<void>;
@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.get<{ data: AuthUser }>("/auth/me");
       return res.data.data ?? res.data as unknown as AuthUser;
     } catch {
+      setMemoryToken(null);
       return null;
     }
   };
@@ -83,6 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleUnauthorized = () => {
       setMemoryToken(null);
       setUser(null);
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     };
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
@@ -123,14 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
+  const signIn = async (email: string, password: string, remember: boolean = false): Promise<{ error: Error | null }> => {
     try {
       // First get CSRF cookie (Sanctum SPA auth)
       await api.get("/sanctum/csrf-cookie", { baseURL: window.location.origin });
-      const res = await api.post<{ data: { token?: string; user: AuthUser } }>("/auth/login", { email, password });
+      const res = await api.post<{ data: { token?: string; user: AuthUser } }>("/auth/login", { email, password, remember });
       const token = (res.data as any).token ?? (res.data as any).data?.token;
       if (token) {
-        setMemoryToken(token);
+        setMemoryToken(token, remember);
       }
       const authUser = (res.data as any).user ?? (res.data as any).data?.user ?? res.data as unknown as AuthUser;
       setUser(authUser);
@@ -145,9 +149,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await api.post("/auth/logout");
+    } catch {
+      /* ignore */
     } finally {
       setMemoryToken(null);
       setUser(null);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
   };
 

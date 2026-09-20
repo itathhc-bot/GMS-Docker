@@ -31,7 +31,19 @@ import NotFound from "@/pages/NotFound";
 import PartsApprovalPage from "@/pages/approvals/PartsApprovalPage";
 import POApprovalPage from "@/pages/approvals/POApprovalPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();

@@ -17,6 +17,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [showForgot, setShowForgot] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const { signIn } = useAuth();
@@ -41,7 +42,7 @@ export default function Login() {
     e.preventDefault();
     if (!email || !password) { toast.error("Please fill in all fields"); return; }
     setIsLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email, password, rememberMe);
     setIsLoading(false);
     if (error) { toast.error(getFriendlyAuthErrorMessage(error, "login")); return; }
     toast.success("Welcome back!");
@@ -86,8 +87,10 @@ export default function Login() {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Checkbox id="remember" />
-                <label htmlFor="remember" className="text-xs text-muted-foreground">Keep me signed in</label>
+                <Checkbox id="remember" checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} />
+                <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
+                  Keep me signed in
+                </label>
               </div>
               <button type="button" className="text-xs text-primary hover:underline" onClick={() => setShowForgot(true)}>
                 Forgot password?

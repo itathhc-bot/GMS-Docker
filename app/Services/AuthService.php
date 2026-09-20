@@ -37,6 +37,13 @@ class AuthService
             ]);
         }
 
+        // Also log in to Laravel's web guard so SPA session cookie authentication works seamlessly
+        \Illuminate\Support\Facades\Auth::guard('web')->login($user, !empty($credentials['remember']));
+        $request = request();
+        if ($request && $request->hasSession()) {
+            $request->session()->regenerate();
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [

@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{displayName || t("common.loading")}</p>
+              <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{displayName || "Administrator"}</p>
               <p className="text-[10px] text-sidebar-muted">{roleLabel}</p>
             </div>
             <button onClick={handleSignOut} className="text-sidebar-muted hover:text-sidebar-foreground transition-colors" title={t("common.signOut")}>

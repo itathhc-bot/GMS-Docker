@@ -133,6 +133,9 @@ class UserManagementService
 
     public function deactivateUser(string $id, string $actorId)
     {
+        if ($id === $actorId) {
+            throw new \InvalidArgumentException('You cannot deactivate your own account.');
+        }
         $user = $this->getUser($id);
         $user->update(['is_active' => false]);
         $user->tokens()->delete();
