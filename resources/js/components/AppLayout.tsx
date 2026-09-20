@@ -26,19 +26,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/", perm: null },
     { icon: BarChart3, label: t("nav.operationsDashboard"), path: "/operations", perm: "operations.view" },
     { icon: Car, label: t("nav.vehicles"), path: "/vehicles", perm: "vehicles.view" },
-    { icon: IdCard, label: t("nav.drivers"), path: "/drivers", perm: null },
+    { icon: IdCard, label: t("nav.drivers"), path: "/drivers", perm: "drivers.view" },
     { icon: ScanLine, label: t("nav.vehicleScan"), path: "/vehicle-scan", perm: "vehicles.scan" },
-    { icon: ClipboardList, label: t("nav.jobCards"), path: "/job-cards", perm: "jobcards.view" },
+    { icon: ClipboardList, label: t("nav.jobCards"), path: "/job-cards", perm: "job_cards.view" },
     { icon: Package, label: t("nav.inventory"), path: "/inventory", perm: "inventory.view" },
     { icon: Wrench, label: t("nav.partsRequest"), path: "/parts-request", perm: "parts.request" },
-    { icon: ShoppingCart, label: "Purchase Orders", path: "/purchase-orders", perm: null },
+    { icon: ShoppingCart, label: "Purchase Orders", path: "/purchase-orders", perm: "po.view" },
     { icon: CheckCircle, label: t("nav.qcReview"), path: "/qc-review", perm: "qc.view" },
     { icon: Monitor, label: t("nav.centralMonitor"), path: "/central-monitor", perm: null },
     { icon: Activity, label: t("nav.bayMonitor"), path: "/bay-monitor", perm: null },
     { icon: BarChart3, label: t("nav.reports"), path: "/reports", perm: "reports.view" },
     { icon: Users, label: t("nav.users"), path: "/users", perm: "users.view" },
     { icon: ShieldCheck, label: t("nav.rolesPermissions"), path: "/roles", perm: "roles.manage" },
-    { icon: Settings, label: t("nav.settings"), path: "/settings", perm: null },
+    { icon: Settings, label: t("nav.settings"), path: "/settings", perm: "settings.view" },
   ];
 
   const navItems = allNavItems.filter((it) => isAdmin || it.perm === null || can(it.perm));

@@ -43,6 +43,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleSupervisor = Role::firstOrCreate(['name' => 'supervisor']);
         $roleSupervisor->givePermissionTo([
             'vehicles.view', 'vehicles.create', 'vehicles.edit',
+            'drivers.view', 'drivers.create', 'drivers.edit',
+            'operations.view',
             'job_cards.view', 'job_cards.create', 'job_cards.edit', 'job_cards.assign', 'job_cards.sign_supervisor',
             'parts.view', 'parts.approve', 'parts.reject',
             'inventory.view',

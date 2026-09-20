@@ -59,8 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
     try {
-      const res = await api.get<{ data: AuthUser }>("/auth/me");
-      return res.data.data ?? res.data as unknown as AuthUser;
+      const res = await api.get("/auth/me");
+      const raw = res.data as any;
+      const userObj = raw?.user ?? raw?.data?.user ?? raw?.data ?? raw;
+      return (userObj && (userObj.id || userObj.email)) ? (userObj as AuthUser) : null;
     } catch {
       setMemoryToken(null);
       return null;
@@ -160,12 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const hasRole = (role: AppRole) => user?.roles.includes(role) ?? false;
+  const hasRole = (role: AppRole) => Array.isArray(user?.roles) && user.roles.includes(role);
 
-  const hasPermission = (permission: string) => user?.permissions.includes(permission) ?? false;
+  const hasPermission = (permission: string) => Array.isArray(user?.permissions) && user.permissions.includes(permission);
 
   const profile = user?.profile ?? null;
-  const roles: AppRole[] = user?.roles ?? [];
+  const roles: AppRole[] = Array.isArray(user?.roles) ? user.roles : [];
 
   const lastPatchedExportColsRef = useRef<string>("");
   const updatePartsExportColumns = useCallback(async (cols: Record<string, boolean>) => {

@@ -50,7 +50,10 @@ export function usePermissions() {
   const canManageSettings  = hasPermission("settings.edit")    || isAdmin;
   const canViewAuditLog    = hasPermission("audit.view")       || isAdmin;
 
+  const can = (permission: string) => isAdmin || hasPermission(permission);
+
   return {
+    can,
     user,
     isAdmin,
     isSupervisor,

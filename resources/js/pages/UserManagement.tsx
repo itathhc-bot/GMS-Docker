@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import AuditLogPanel from "@/components/users/AuditLogPanel";
 import api from "@/api/client";
@@ -110,7 +111,9 @@ interface PendingConfirm {
 export default function UserManagement() {
   const { t } = useTranslation();
   const { hasRole, user } = useAuth();
+  const { can } = usePermissions();
   const isAdmin = hasRole("admin");
+  const canView = isAdmin || can("users.view");
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -148,6 +151,10 @@ export default function UserManagement() {
   const roleLabel = (r: AppRole) => t(`users.roles.${r}`);
 
   const fetchUsers = useCallback(async () => {
+    if (!canView) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [usersData, rolesData] = await Promise.all([
@@ -179,7 +186,7 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, canView]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -189,6 +196,10 @@ export default function UserManagement() {
   };
 
   const createUser = async () => {
+    if (!isAdmin) {
+      toast.error(t("users.messages.adminOnly", "Only administrators can create users."));
+      return;
+    }
     if (!newUser.email || !newUser.password || !newUser.full_name) {
       toast.error(t("users.messages.credentialsRequired"));
       return;
@@ -216,6 +227,10 @@ export default function UserManagement() {
     target: UserWithRoles,
     role?: AppRole,
   ): Promise<boolean> => {
+    if (!isAdmin) {
+      toast.error(t("users.messages.adminOnly", "Only administrators can perform user actions."));
+      return false;
+    }
     setActionBusy(target.user_id);
     try {
       if (action === "send_password_reset") await usersApi.sendPasswordReset(target.user_id);
@@ -255,6 +270,10 @@ export default function UserManagement() {
   };
 
   const submitSetPassword = async () => {
+    if (!isAdmin) {
+      toast.error(t("users.messages.adminOnly", "Only administrators can set passwords."));
+      return;
+    }
     if (!detailsUser) return;
     setPwError(null);
     setPwBusy(true);
@@ -287,6 +306,7 @@ export default function UserManagement() {
   };
 
   const addRole = async () => {
+    if (!isAdmin) return;
     if (!selectedUser || !newRole) return;
     const ok = await callAdminAction("assign_role", selectedUser, newRole as AppRole);
     if (ok) {
@@ -297,6 +317,7 @@ export default function UserManagement() {
   };
 
   const addCustomRole = async () => {
+    if (!isAdmin) return;
     if (!selectedUser || !newCustomRoleId) return;
     const role = customRoles.find((r) => r.id === newCustomRoleId);
     setActionBusy(selectedUser.user_id);
@@ -314,6 +335,7 @@ export default function UserManagement() {
   };
 
   const removeCustomRole = async (u: UserWithRoles, roleId: string, label: string) => {
+    if (!isAdmin) return;
     setActionBusy(u.user_id);
     try {
       await usersApi.removeRole(u.user_id, roleId);
@@ -327,6 +349,7 @@ export default function UserManagement() {
   };
 
   const removeRole = async (u: UserWithRoles, role: AppRole) => {
+    if (!isAdmin) return;
     if (role === "admin" && u.user_id === user?.id) {
       toast.error(t("users.messages.selfAdmin"));
       return;
@@ -344,6 +367,16 @@ export default function UserManagement() {
       u.employee_id?.toLowerCase().includes(search.toLowerCase()) ||
       u.roles.some((r) => roleLabel(r).toLowerCase().includes(search.toLowerCase()))
   );
+
+  if (!canView) {
+    return (
+      <Card className="p-8 text-center max-w-md mx-auto mt-12">
+        <Lock className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+        <h2 className="text-lg font-semibold">{t("users.accessDenied", "Access Denied")}</h2>
+        <p className="text-sm text-muted-foreground">{t("users.accessDeniedDesc", "You do not have permission to view User Management.")}</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
