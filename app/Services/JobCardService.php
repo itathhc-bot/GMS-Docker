@@ -42,6 +42,14 @@ class JobCardService
         $updates = ['status' => $status];
 
         $lower = strtolower(trim($status));
+        $currentLower = strtolower(trim($jobCard->status ?? ''));
+        if (in_array($lower, ['completed', 'closed']) && !in_array($currentLower, ['completed', 'closed'])) {
+            $user = User::find($actorId);
+            if ($user && !$user->hasRole('admin') && !$user->hasRole('qc_inspector') && !$user->hasPermissionTo('qc.review')) {
+                abort(403, 'Only users with QC review permission or administrators can mark a job card as Completed. Please submit for QC Review.');
+            }
+        }
+
         if ($lower === 'in progress' || $lower === 'in_progress') {
             if (empty($jobCard->started_at)) {
                 $updates['started_at'] = now();

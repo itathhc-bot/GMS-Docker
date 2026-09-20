@@ -290,7 +290,9 @@
     "edit": {
       "title": "Edit Job Card",
       "subtitle": "Update status, priority, bay or assigned mechanic.",
-      "saved": "Job card updated"
+      "saved": "Job card updated",
+      "qcRequired": "QC Review Required",
+      "qcRequiredError": "Only users with QC review permission or administrators can mark a job card as Completed. Please submit for QC Review."
     },
     "table": {
       "jobId": "JOB ID",

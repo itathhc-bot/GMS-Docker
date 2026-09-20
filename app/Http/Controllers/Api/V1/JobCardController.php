@@ -42,6 +42,15 @@ class JobCardController extends Controller {
         $data = $request->validated();
         if (isset($data['status'])) {
             $lower = strtolower(trim($data['status']));
+            $currentLower = strtolower(trim($jobCard->status ?? ''));
+            if (in_array($lower, ['completed', 'closed']) && !in_array($currentLower, ['completed', 'closed'])) {
+                $user = $request->user();
+                if (!$user->hasRole('admin') && !$user->hasRole('qc_inspector') && !$user->hasPermissionTo('qc.review')) {
+                    return response()->json([
+                        'message' => 'Only users with QC review permission or administrators can mark a job card as Completed. Please submit for QC Review.',
+                    ], 403);
+                }
+            }
             if (($lower === 'in progress' || $lower === 'in_progress') && empty($jobCard->started_at) && empty($data['started_at'])) {
                 $data['started_at'] = now();
             } elseif (($lower === 'completed' || $lower === 'closed') && empty($jobCard->completed_at) && empty($data['completed_at'])) {
@@ -75,7 +84,20 @@ class JobCardController extends Controller {
             $jobCard = JobCard::findOrFail($id);
         }
         $this->authorize('update', $jobCard);
-        $updated = $this->service->updateStatus($jobCard->id, $request->get('status'), $request->user()->id);
+        $status = $request->get('status');
+        if ($status) {
+            $lower = strtolower(trim($status));
+            $currentLower = strtolower(trim($jobCard->status ?? ''));
+            if (in_array($lower, ['completed', 'closed']) && !in_array($currentLower, ['completed', 'closed'])) {
+                $user = $request->user();
+                if (!$user->hasRole('admin') && !$user->hasRole('qc_inspector') && !$user->hasPermissionTo('qc.review')) {
+                    return response()->json([
+                        'message' => 'Only users with QC review permission or administrators can mark a job card as Completed. Please submit for QC Review.',
+                    ], 403);
+                }
+            }
+        }
+        $updated = $this->service->updateStatus($jobCard->id, $status, $request->user()->id);
         return new JobCardResource($updated->load('vehicle', 'assignedUser.profile', 'inspections'));
     }
     public function signMechanic(SignJobCardRequest $request, JobCard $jobCard) {

@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 import { getJobCard, updateJobCard } from "@/api/jobCards";
 import { getUsers } from "@/api/users";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const BAYS = ["", "Bay 01", "Bay 02", "Bay 03", "Bay 04", "Bay 05", "Bay 06", "Bay 07", "Bay 08"];
 const STATUSES = ["Open", "In Progress", "Pending Parts", "QC Review", "Completed", "Delayed"];
@@ -50,8 +52,13 @@ function joinDescription(title: string, body: string): string | null {
 
 export default function JobCardEditDialog({ open, onOpenChange, jobCardId, onSaved }: Props) {
   const { t } = useTranslation();
+  const { hasRole } = useAuth();
+  const { can, canReviewQc } = usePermissions();
+  const canComplete = hasRole("admin") || hasRole("qc_inspector") || can("qc.review") || canReviewQc;
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [initialStatus, setInitialStatus] = useState("");
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [bay, setBay] = useState("");
@@ -71,6 +78,7 @@ export default function JobCardEditDialog({ open, onOpenChange, jobCardId, onSav
         ]);
         if (jc) {
           setStatus(jc.status);
+          setInitialStatus(jc.status);
           setPriority(jc.priority);
           setBay(jc.bay_number || "");
           setAssignedTo(jc.assigned_to || "");
@@ -93,6 +101,17 @@ export default function JobCardEditDialog({ open, onOpenChange, jobCardId, onSav
 
   const save = async () => {
     if (!jobCardId) return;
+
+    if (status === "Completed" && !canComplete && initialStatus !== "Completed") {
+      toast.error(
+        t(
+          "jobCards.edit.qcRequiredError",
+          "Only users with QC review permission or administrators can mark a job card as Completed. Please submit for QC Review."
+        )
+      );
+      return;
+    }
+
     setSaving(true);
     const updates: {
       status: string;
@@ -162,9 +181,15 @@ export default function JobCardEditDialog({ open, onOpenChange, jobCardId, onSav
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
+                  {STATUSES.map((s) => {
+                    const isCompleted = s === "Completed";
+                    const disabled = isCompleted && !canComplete && initialStatus !== "Completed";
+                    return (
+                      <SelectItem key={s} value={s} disabled={disabled}>
+                        {s} {disabled ? `(${t("jobCards.edit.qcRequired", "QC Review Required")})` : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
